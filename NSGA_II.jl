@@ -1,4 +1,4 @@
-module NSGA_II
+#module NSGA_II
 #-------------------------DEFINITION-------------------------
 #Simple implementation of the NSGA-II multiobjective
 #genetic algorithm.
@@ -8,7 +8,7 @@ using Base.Test
 
 
 #-------------------------exported methods-------------------------
-export 
+#export 
 
 
 #-------------------------type definitions-------------------------
@@ -85,7 +85,7 @@ end
 
 
 
-function fastDelete!(values::Vector, deletion::Vector)
+function fastDelete(values::Vector, deletion::Vector)
   #both are sorted, we take that into account
   #deletion vector cannot be empty by definition
   #start at naturals, not whole integer range
@@ -118,7 +118,7 @@ function nonDominatedSort(population::Vector{arrangement})
   #could also require population to be pair...
   cutoff = div(length(population), 2) + length(population)%2
   
-  values = (Int, Int, Int[])  
+  values = {} #to improve...
   len = length(population)
   
   #1- evaluate the whole population
@@ -132,23 +132,26 @@ function nonDominatedSort(population::Vector{arrangement})
     #find the "dominators"
     front = filter(x->x[2] == 0, values)
     frontIndices = map(x->x[1], front)
-    push!(result, frontIndices)
+    push!(fronts, frontIndices)
     
     #exclude the dominators from the values (could reuse)
     values = filter(x->x[2] != 0, values)
     
     #decrement the count based on the latest front
-    for i in values
+    for i in 1:length(values)
       #delete the last front from the indices
-      substracted = fastDelete(i[2], frontIndices)
+      substracted = fastDelete(values[i][3], frontIndices)
       #substract the difference of cardinality
-      diff = length(i[2]) - length(substracted)
-      i[3] = substracted
-      i[2] = diff
+      cardinality = length(substracted)
+      values[i] = (values[i][1], cardinality, substracted)
     end
   end
-  return result
+  return fronts
 end
+
+#to test
+
+
 
 
 
@@ -241,8 +244,53 @@ function test_nonDominatedCompare()
   return true
 end
 
-function test_evaluate()
+function randomFitnessArray(fitnessLen::Int)
+  #helper
+  return map(abs, rand(Int, fitnessLen))
+end
+
+function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #unit test
+  individuals = arrangement[]
+  for i =  1: cardinality
+    push!(individuals, arrangement([],randomFitnessArray(fitnessLen)))
+  end
+  sorts = nonDominatedSort(individuals)
+  #no domination within the same front
+  for i = 1:length(sorts)
+    ar = sorts[i]
+    for j in ar
+      for k in ar
+	@test nonDominatedCompare(individuals[j].fitness, individuals[k].fitness) == 0
+      end
+    end
+  end
+  #domination or equivalence of all for greater front
+  #all in 1 dominate all in 2
+  if(length(sorts)>1)
+    for i = 1:length(sorts)-1
+      a = sorts[i]
+      b = sorts[i+1]
+      for j in a
+	for k in b
+	  @test nonDominatedCompare(individuals[j].fitness, individuals[k].fitness) in (0,1)
+	end
+      end
+    end
+  end
+    
+  return true
+end
+  
+  
+function test_evaluate(cardinality::Int)
+  #unit test
+  
+  individuals = arrangement[]
+  for i =  1: cardinality
+    push!(individuals, arrangement([],randomFitnessArray(fitnessLen)))
+  end
+  
   a = arrangement([], [1,2,3,4,5])
   b = arrangement([], [0,0,4,2,0])
   c = arrangement([], [0,0,1,1,1])
@@ -290,13 +338,14 @@ function test_crowdingSort()
   minObjs = [0,0,0,0,0]
   
   
-crowDingSort(pop, )
+
 end
 
 function test_all()
   #unit test all
   test_evaluate()
-  test_fastDelete(1000,1000)
+  test_fastDelete(2000,2000)
+  test_nonDominatedSort(2000, 5)
   test_nonDominatedCompare()
   return true
 end
@@ -304,4 +353,4 @@ end
 
 
 #--module end
-end
+#end
