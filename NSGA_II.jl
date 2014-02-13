@@ -1,11 +1,13 @@
 module NSGA_II
+#-------------------------DEFINITION-------------------------
+#Simple implementation of the NSGA-II multiobjective
+#genetic algorithm.
 
 #-------------------------imports-------------------------
 using Base.Test
 
 
 #-------------------------exported methods-------------------------
-
 export 
 
 
@@ -148,27 +150,62 @@ function nonDominatedSort(population::Vector{arrangement})
   return result
 end
 
-function crowdingSort(lastfront::Vector{arrangement})
+
+
+function crowdingSort(input::Vector{arrangement}, n::Int, maxObjs::Vector, minObjs::Vector)
   #multi-objective optimization using evolutionnary algorithms p.248
-  #input is the last front that is over the population limit
+  #n is the number of individuals to select from this population
   
   #typeof(Inf) == Float64...
+  #zip it with iterator 1:length(lastfront) and use array access to make it faster :)
+  
   
   #step 1 
-  l = length(lastfront)
-  m = length(lastfront[1].fitness)
+  l = length(input)
+  m = length(input[1].fitness)
+  lastfront = (Int, arrangement)[]
+  for i=1:l
+    push!(lastfront,(i, input[i]))
+  end
   
+  values = zeros(l)
+
+    
   #step 2
   sorts = {}
   for i = 1:m
-    push!(sort(lastfront, by = x->x.fitness[i], rev = true))
+    push!(sorts, map(x->x[1],sort(lastfront, by = x->x[2].fitness[i], rev = true)))
   end
   
   #step 3
-  fkakakakakakkakkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+  #for each objective 
   
-
+  for i = 1:m
+    ar = sorts[i]
+    #first and last have infinite value
+    divider =  maxObjs[i] - minObjs[i]
+    
+    values[ar[1]] = Inf
+    values[ar[end]] = Inf
+    #rest have value according to multi-objective optimization using evolutionnary algorithms p.250
+    for j = 2:l-1
+      values[ar[j]] += (input[j+1].fitness[i]  - input[j-1].fitness[i])/divider
+    end 
+  end
+  
+  #step 4
+  #reassign indices, sort and output the n first indices...
+  
+  result = (Int, Float64)[]
+  for i=1:l
+    push!(result, (i, values[i]))
+  end
+  
+  result = sort(result, by = x->x[2], rev=true)[1:n]
+  return map(x->x[1], result)
 end
+  
+  
 
 
 
@@ -239,6 +276,22 @@ function test_fastDelete(repet::Int, size::Int)
   return true
 end
 
+function test_crowdingSort()
+  a = arrangement([], [1,2,3,4,5])
+  b = arrangement([], [0,0,4,2,0])
+  c = arrangement([], [2,0,1,1,1])
+  d = arrangement([], [0,2,2,1,5])
+  e = arrangement([], [2,1,1,1,1])
+  f = arrangement([], [2,2,2,2,2])
+  g = arrangement([], [2,2,2,2,2])
+  h = arrangement([], [2,3,2,2,2])
+  pop = [a,b,c,d,e,f,g,h]
+  maxObjs = [5,5,5,5,5]
+  minObjs = [0,0,0,0,0]
+  
+  
+crowDingSort(pop, )
+end
 
 function test_all()
   #unit test all

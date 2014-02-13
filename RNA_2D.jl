@@ -8,6 +8,10 @@ module RNA_2D
 using Base.Test
 
 
+#-------------------------exported methods-------------------------
+export 
+
+
 
 #-------------------------type definition-------------------------
 immutable structure
@@ -162,7 +166,7 @@ end
 function test_testDotBracket()
   #unit test
   @test testDotBracket("((((.)))") == false #missing brackets on the right
-  @test testDotBracket("(((.))))") == false#missing brackets on the left
+  @test testDotBracket("(((.))))") == false #missing brackets on the left
   @test testDotBracket("(((())))") == false
 end
 

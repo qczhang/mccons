@@ -23,3 +23,11 @@
 
 
 
+#Calling C code 
+#with gcc or clang: compile with 
+#-shared -fPIC
+
+
+
+#Tuples
+#they are immutable, don't even try
