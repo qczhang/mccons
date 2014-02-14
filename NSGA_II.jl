@@ -149,19 +149,79 @@ function nonDominatedSort(population::Vector{arrangement})
   return fronts
 end
 
-#to test
+function findEqualVectors(a::(Int, Vector))
+  #triangular numbers, O(n^2)
+  #a :: index, vector)
+  #use shift!
+  equal = (Int, Int)[]
+  toVisit = trues(length(a))
+  for i = 1:(length(a)-1)
+    if toVisit[i] == true
+      elem = a[i][2]
+      for j = (i+1):(length(a)-1)
+	if toVisit[j] == 1.0
+	  if a[j][2] == elem
+	    push!(equal, (a[i][1], a[j][1]))
+	    toVisit[j] = false
+	  end
+	end
+      end
+    end
+  end  
+  return result
+end
+  
+  
+
+function findIdentical(a::Array{(Int,Array{Int,1}),1})
+  #a :: (index, int vector)
+  #the vector must be sorted by first index
+  equivalents = (Int, Int)[]
+  
+  
+  i = 1
+  while i < length(a)
+    equivClass = Vector{Int, T}[]
+    val = a[i][2][1]
+    #get all the elements in the equivalence class
+    while a[i][2][1] == val
+      push!(equivClass, a[i])
+      i+=1
+    end
+    #if the class is not empty
+    if !(length(equivClass) == 1)
+      
+      
+    
+
+
+function crowdingDistance(population::Vector{arrangement})
+  #calculate the crowding distance for the 2N population
+  #this is based on "Revisiting the NSGA-II crowding distance computation"
+  #step 1
+  values = (Int, Vector)[]
+  for i = 1:length(population)
+    push!(values,(i,population[i].fitness))
+  end
+  
+  #step 2
+  #sort by first fitness value
+  sort!(values, by=x->x[2][1], 2)
+  
+  #step 3
+  #find uniques and concatenate
+  #go in ascending order, verify if equal, add (first, equalx) until equalx is different
+  nonUniques = (Int, Int)[]
+  
+  #step 4
+  
+  
 
 
 
-
-
-function crowdingSort(input::Vector{arrangement}, n::Int, maxObjs::Vector, minObjs::Vector)
+function lastFrontSelection(input::Vector{arrangement}, n::Int, maxObjs::Vector, minObjs::Vector)
   #multi-objective optimization using evolutionnary algorithms p.248
   #n is the number of individuals to select from this population
-  
-  #typeof(Inf) == Float64...
-  #zip it with iterator 1:length(lastfront) and use array access to make it faster :)
-  
   
   #step 1 
   l = length(input)
@@ -182,7 +242,6 @@ function crowdingSort(input::Vector{arrangement}, n::Int, maxObjs::Vector, minOb
   
   #step 3
   #for each objective 
-  
   for i = 1:m
     ar = sorts[i]
     #first and last have infinite value
@@ -209,148 +268,6 @@ function crowdingSort(input::Vector{arrangement}, n::Int, maxObjs::Vector, minOb
 end
   
   
-
-
-
-
-
-
-
-#-------------------------unit test methods-------------------------
-function test_nonDominatedCompare()
-  #unit test
-  a = [1,2,3,4]
-  b = [1,2,3,4]
-  c = [1,3,3,4]
-  d = [0,2,3,4]
-  e = [1,2,3,5]
-  f = [1,2,3,3]
-  #equal
-  @test nonDominatedCompare(a,b) == 0
-  @test nonDominatedCompare(b,a) == 0
-  
-  #smaller
-  @test nonDominatedCompare(a,c) == -1
-  @test nonDominatedCompare(d,a) == -1
-  @test nonDominatedCompare(f,a) == -1
-  @test nonDominatedCompare(a,e) == -1
-  
-  #bigger
-  @test nonDominatedCompare(c,a) == 1
-  @test nonDominatedCompare(a,d) == 1
-  @test nonDominatedCompare(a,f) == 1
-  @test nonDominatedCompare(e,a) == 1
-  
-  return true
-end
-
-function randomFitnessArray(fitnessLen::Int)
-  #helper
-  return map(abs, rand(Int, fitnessLen))
-end
-
-function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
-  #unit test
-  #exhaustive
-  individuals = arrangement[]
-  for i =  1: cardinality
-    push!(individuals, arrangement([],randomFitnessArray(fitnessLen)))
-  end
-  sorts = nonDominatedSort(individuals)
-  #no domination within the same front
-  for i = 1:length(sorts)
-    ar = sorts[i]
-    for j in ar
-      for k in ar
-	@test nonDominatedCompare(individuals[j].fitness, individuals[k].fitness) == 0
-      end
-    end
-  end
-  #domination or equivalence of all for greater front
-  #all in 1 dominate all in 2
-  if(length(sorts)>1)
-    for i = 1:length(sorts)-1
-      a = sorts[i]
-      b = sorts[i+1]
-      for j in a
-	for k in b
-	  @test nonDominatedCompare(individuals[j].fitness, individuals[k].fitness) in (0,1)
-	end
-      end
-    end
-  end
-    
-  return true
-end
-  
-  
-function test_evaluate(cardinality::Int)
-  #unit test
-  
-  individuals = arrangement[]
-  for i =  1: cardinality
-    push!(individuals, arrangement([],randomFitnessArray(fitnessLen)))
-  end
-  
-  a = arrangement([], [1,2,3,4,5])
-  b = arrangement([], [0,0,4,2,0])
-  c = arrangement([], [0,0,1,1,1])
-  d = arrangement([], [0,2,2,1,5])
-  pop = [a,b,c,d]
-  @test evaluate(pop, 1, nonDominatedCompare) == (1,0,[])
-  @test evaluate(pop, 2, nonDominatedCompare) == (2,0,[])
-  @test evaluate(pop, 3, nonDominatedCompare) == (3,2,[1,4])
-  @test evaluate(pop, 4, nonDominatedCompare) == (4,1,[1])
-  return true
-end
-
-
-function slowDelete(values::Vector, deletion::Vector)
-  #helper
-  return filter(x->!(x in deletion), values)
-end 
-
-function generatePosRandInt(n::Int)
-  #helper
-  return filter(x->x>0, unique(sort(rand(Int16, n))))
-end
-
-function test_fastDelete(repet::Int, size::Int)
-  #unit test, exhaustive
-  for i= 1:repet
-    values = generatePosRandInt(size)
-    deletion = generatePosRandInt(size)
-    @test slowDelete(values, deletion) == fastDelete(values, deletion)
-  end
-  return true
-end
-
-function test_crowdingSort()
-  a = arrangement([], [1,2,3,4,5])
-  b = arrangement([], [0,0,4,2,0])
-  c = arrangement([], [2,0,1,1,1])
-  d = arrangement([], [0,2,2,1,5])
-  e = arrangement([], [2,1,1,1,1])
-  f = arrangement([], [2,2,2,2,2])
-  g = arrangement([], [2,2,2,2,2])
-  h = arrangement([], [2,3,2,2,2])
-  pop = [a,b,c,d,e,f,g,h]
-  maxObjs = [5,5,5,5,5]
-  minObjs = [0,0,0,0,0]
-  
-  
-
-end
-
-function test_all()
-  #unit test all
-  test_evaluate()
-  test_fastDelete(2000,2000)
-  test_nonDominatedSort(2000, 5)
-  test_nonDominatedCompare()
-  return true
-end
-
 
 
 #--module end
