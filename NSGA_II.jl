@@ -149,17 +149,19 @@ function nonDominatedSort(population::Vector{arrangement})
   return fronts
 end
 
-function findEqualVectors(a::(Int, Vector))
+function findEqualVectors(a::Array{(Int,Array{Int,1}),1})
   #triangular numbers, O(n^2)
   #a :: index, vector)
   #use shift!
   equal = (Int, Int)[]
   toVisit = trues(length(a))
   for i = 1:(length(a)-1)
+    println(a[i])
     if toVisit[i] == true
       elem = a[i][2]
-      for j = (i+1):(length(a)-1)
-	if toVisit[j] == 1.0
+      for j = (i+1):length(a)
+	if toVisit[j] == true
+	  #println(a[j][2])
 	  if a[j][2] == elem
 	    push!(equal, (a[i][1], a[j][1]))
 	    toVisit[j] = false
@@ -168,7 +170,7 @@ function findEqualVectors(a::(Int, Vector))
       end
     end
   end  
-  return result
+  return equal
 end
   
   

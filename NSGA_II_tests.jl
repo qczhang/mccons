@@ -34,7 +34,7 @@ end
 
 function randomFitnessArray(fitnessLen::Int)
   #helper
-  return map(abs, rand(Int, fitnessLen))
+  return map(abs, rand(Int16, fitnessLen))
 end
 
 function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
@@ -137,15 +137,29 @@ end
 
 
 function test_findEqualVectors(n::Int)
-  vals = Array{(Int,Array{Int,1}),1}[]
-  for i = 1:n
-    push!(vals, (i, randomFitnessArray(5)))
+  #unit test, exhaustive
+  type t
+    x::Int
+    y::Array{Int,1}
+  end
+  #generate data
+  vals = [t(1, randomFitnessArray(5))]
+  for i = 2:n
+    push!(vals, t(i, randomFitnessArray(5)))
   end
   
+  #generate doubles
+  i = 0
+  while i < n/2
+    push!(vals, (n+i, vals[rand(1:n)].y))
+    i+=1
+  end
   
-    
+  #sort array
+  sort!(vals, by = x->x.y[1])
+  cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  
 end
-
 function test_all()
   #exhaustive
   test_nonDominatedCompare(1000,3)
