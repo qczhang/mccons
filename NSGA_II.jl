@@ -251,6 +251,7 @@ end
 
 function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #unit test
+  #exhaustive
   individuals = arrangement[]
   for i =  1: cardinality
     push!(individuals, arrangement([],randomFitnessArray(fitnessLen)))
@@ -305,17 +306,17 @@ end
 
 
 function slowDelete(values::Vector, deletion::Vector)
+  #helper
   return filter(x->!(x in deletion), values)
 end 
 
 function generatePosRandInt(n::Int)
+  #helper
   return filter(x->x>0, unique(sort(rand(Int16, n))))
 end
 
 function test_fastDelete(repet::Int, size::Int)
-  #unit test
-  #as far as can tell, equivalent to slowDelete (warning, the rand(Int, n) is too sparse to test )
-  #use rand(Int16,n) or something like that
+  #unit test, exhaustive
   for i= 1:repet
     values = generatePosRandInt(size)
     deletion = generatePosRandInt(size)
