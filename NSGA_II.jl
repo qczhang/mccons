@@ -12,12 +12,14 @@ using Base.Test
 
 
 #-------------------------type definitions-------------------------
-type arrangement
-  #represents combination of structures
-  parts::Vector
+immutable solution
+  units::Vector
   fitness::Vector
 end
-  
+
+type population
+  individuals::Vector{solution}
+end
 
 #-------------------------genetic algorithm methods-------------------------
 function nonDominatedCompare (a::Vector, b::Vector, comparator = >)
@@ -56,25 +58,25 @@ end
 
 
 
-function evaluate(population::Vector{arrangement}, index::Int, compare_method = nonDominatedCompare)
+function evaluate(pop::population, index::Int, compare_method = nonDominatedCompare)
   #compare the object at index with the rest of the vector
   #output must be sorted
   count = 0
   dominatedby = (Int)[]
-  indFit = population[index].fitness
+  indFit = pop[index].fitness
   #before the index
   if index!= 1
     for i = 1: (index-1)
-      if compare_method(population[i].fitness, indFit) == 1
+      if compare_method(pop[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
     end
   end
   #after the index
-  if index != length(population)
-    for i = (index+1):length(population) #exclude the index
-      if compare_method(population[i].fitness, indFit) == 1
+  if index != length(pop)
+    for i = (index+1):length(pop) #exclude the index
+      if compare_method(pop[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
@@ -108,22 +110,23 @@ function fastDelete(values::Vector, deletion::Vector)
 end
   
 
-
-
-function nonDominatedSort(population::Vector{arrangement})
+function nonDominatedSort(pop::population) 
+  #TO REPLACE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   #multi-objective optimization using evolutionnary algorithms p.43
+  
+  
   #step 1 of non dominated sorting
-  #sort the population in non dominated fronts
+  #sort the pop in non dominated fronts
   
   #could also require population to be pair...
-  cutoff = div(length(population), 2) + length(population)%2
+  cutoff = div(length(pop), 2) + length(pop)%2
   
   values = {} #to improve...
-  len = length(population)
+  len = length(pop)
   
   #1- evaluate the whole population
   for i = 1:len
-    push!(values, evaluate(population, i, nonDominatedCompare))
+    push!(values, evaluate(pop, i, nonDominatedCompare))
   end
   
   fronts = {}
@@ -149,125 +152,74 @@ function nonDominatedSort(population::Vector{arrangement})
   return fronts
 end
 
-function findEqualVectors(a::Array{(Int,Array{Int,1}),1})
-  #triangular numbers, O(n^2)
-  #a :: index, vector)
-  #use shift!
-  equal = (Int, Int)[]
-  toVisit = trues(length(a))
-  for i = 1:(length(a)-1)
-    println(a[i])
-    if toVisit[i] == true
-      elem = a[i][2]
-      for j = (i+1):length(a)
-	if toVisit[j] == true
-	  #println(a[j][2])
-	  if a[j][2] == elem
-	    push!(equal, (a[i][1], a[j][1]))
-	    toVisit[j] = false
-	  end
-	end
-      end
-    end
-  end  
+function uniqueFitness(a::Array{(Int,Array{Int,1}),1})
+  #map fitness to index (get unique fitness)
+  equal = Dict{Vector{Int}, Vector{Int}}()
+  for i in a
+    equal[i[2]] = push!(get(equal, i[2], Int[]), i[1])
+  end
   return equal
 end
-  
-  
-
-function findIdentical(a::Array{(Int,Array{Int,1}),1})
-  #a :: (index, int vector)
-  #the vector must be sorted by first index
-  equivalents = (Int, Int)[]
-  
-  
-  i = 1
-  while i < length(a)
-    equivClass = Vector{Int, T}[]
-    val = a[i][2][1]
-    #get all the elements in the equivalence class
-    while a[i][2][1] == val
-      push!(equivClass, a[i])
-      i+=1
-    end
-    #if the class is not empty
-    if !(length(equivClass) == 1)
       
-      
-    
+   
 
 
-function crowdingDistance(population::Vector{arrangement})
+function crowdingDistance(pop::population)
   #calculate the crowding distance for the 2N population
   #this is based on "Revisiting the NSGA-II crowding distance computation"
+  
   #step 1
+  #assing index to keep track after sorting
   values = (Int, Vector)[]
-  for i = 1:length(population)
-    push!(values,(i,population[i].fitness))
+  for i = 1:length(pop)
+    push!(values,(i,pop[i].fitness))
   end
   
-  #step 2
-  #sort by first fitness value
-  sort!(values, by=x->x[2][1], 2)
+  #step 2 -----------------------------------------------------------
+  #get the unique fitness vectors
+  fitnessMapping = uniqueFitness(values)
+  fitnesses = keys(fitnessMapping)
   
-  #step 3
-  #find uniques and concatenate
-  #go in ascending order, verify if equal, add (first, equalx) until equalx is different
-  nonUniques = (Int, Int)[]
+  #step 3 -----------------------------------------------------------
+  #do the crowding distance
+  popSize = length(fitnesses) #we need the number of uniques
+  vectorSize = length(fitnesses[1]) #all same size
   
-  #step 4
-  
-  
-
-
-
-function lastFrontSelection(input::Vector{arrangement}, n::Int, maxObjs::Vector, minObjs::Vector)
-  #multi-objective optimization using evolutionnary algorithms p.248
-  #n is the number of individuals to select from this population
-  
-  #step 1 
-  l = length(input)
-  m = length(input[1].fitness)
-  lastfront = (Int, arrangement)[]
-  for i=1:l
-    push!(lastfront,(i, input[i]))
+  #we use only the fitnesses
+  sorts = {} #think about the type...
+  for i = 1:vectorSize
+    push!(sorts, sort(fitnesses, by = x->x[i]), rev =true)
   end
   
-  values = zeros(l)
-
-    
-  #step 2
-  sorts = {}
-  for i = 1:m
-    push!(sorts, map(x->x[1],sort(lastfront, by = x->x[2].fitness[i], rev = true)))
+  #get the max and min of each objective
+  minFitnesses = map(x->x[end], sorts)
+  maxFitnesses = map(x->x[1],   sorts)
+  rangeSize = map(x->x[1]-x[2], zip(maxFitnesses, minFitnesses))
+  
+  #test
+  map(x-> @assert x>=0, rangeSize )
+  
+  #assign infinite distance to extremities
+  distances = Dict{Vector{Int}, Float}()
+  #initialize at zero
+  for i in fitnesses
+    distances[i] = 0
   end
   
-  #step 3
-  #for each objective 
-  for i = 1:m
-    ar = sorts[i]
-    #first and last have infinite value
-    divider =  maxObjs[i] - minObjs[i]
-    
-    values[ar[1]] = Inf
-    values[ar[end]] = Inf
-    #rest have value according to multi-objective optimization using evolutionnary algorithms p.250
-    for j = 2:l-1
-      values[ar[j]] += (input[j+1].fitness[i]  - input[j-1].fitness[i])/divider
-    end 
+  map(x->distances[x[end]] = Inf, sorts)
+  map(x->distances[x[1]]   = Inf, sorts)
+  
+  #calculate the other ones
+  for i = 1:vectorSize
+    for j = 2:(popSize-1) #first and last are already calculated
+      distances[sorts[i][j]] += (sorts[i][j-1] - sorts[i][j+1])/rangeSize[i]
+    end
   end
   
-  #step 4
-  #reassign indices, sort and output the n first indices...
-  
-  result = (Int, Float64)[]
-  for i=1:l
-    push!(result, (i, values[i]))
-  end
-  
-  result = sort(result, by = x->x[2], rev=true)[1:n]
-  return map(x->x[1], result)
+  return distances
 end
+
+
   
   
 

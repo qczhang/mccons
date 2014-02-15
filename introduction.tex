@@ -1,0 +1,208 @@
+\documentclass[a4paper, 12pt] {article}
+\usepackage[utf8]{inputenc}
+\usepackage[pdftex]{graphicx}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+\begin {document}
+
+
+%title page
+
+\begin{titlepage}
+\begin{center}
+\textsc{\LARGE Université de Montréal}\\[1.5cm]
+
+\HRule \\[0.4cm]
+
+{\huge Multiobjective consensus sequence search
+\HRule \\[0.4cm]}
+\vfill
+\emph{Authors:}\\
+Gabriel \textsc{Parent}\\
+Stefanie \textsc {Schirmer}
+\vfill
+\emph{Supervisor:} \\
+Dr.~François \textsc{Major}
+\vfill
+{\large \today}
+\end{center}
+\end{titlepage}
+
+
+
+% first section, the introduction
+\section*{INTRODUCTION}
+
+\noindent
+\section*{USE CASE}
+\subsection*{Consensus sequence search (mccons)}
+\begin{enumerate}
+  \item There is a family of multiple RNA sequences who share a common function.
+  \item There is a reason to suspect that the fucntion is related to structure. 
+  \item There is a tool which can give you different possibilities of structure (suboptimals) for each sequence.
+\end{enumerate}
+A simple example of use would be to try to find common structures for tRNAs, IRE or families within Rfam.
+
+\subsection*{Distance measures comparison}
+\begin{enumerate}
+  \item There are multiple distance functions which are of interest.
+  \item These distance functions respect at least these criterias
+    \begin{enumerate}
+      \item d(x, y) $\geq$ 0 (non-negativity)
+      \item d(x, y) = 0 iff x = y 
+      \item d(x, y) = d(y, x) (symmetry)
+    \end{enumerate}
+  \item There is interest in observing what tradeoffs are involved between the distance functions.
+\end{enumerate}
+A simple case of use could be to analyze how the base pair set distance, mountain distance and hausdorff distance
+agree between themselves and what kind of structure score high in certain and low in others. It gives a sense
+of what is really compared and which distance function should be used for certain tasks.\\
+
+\noindent
+\section*{Workflow (mccons)}
+\subsection*{Inputs}
+\noindent
+The current mccons version takes two inputs:
+
+\begin{enumerate}
+  \item $n$ possible 2D structures (Vienna dot bracket) of $m$ different sequences of RNA.
+  \item $j$ distance functions between theses structures
+\end{enumerate}
+\noindent
+
+\subsection*{Representation}
+A solution is created by randomly choosing a structure for each RNA family. In the language of
+genetic algorithms, a solution is an "individual".
+In $Julia$, a solution is represented by an immutable type with two fields.
+\HRule \\[0.4cm]
+\begin{math}
+\noindent
+immutable \; solution\\
+\indent units::Vector\\
+\indent fitness::Vector\\
+end\\
+\noindent
+\end{math}
+\HRule \\[0.4cm]
+Units represents the vector of chosen structures from each family.
+e.g. units[i] is a structure that belongs to family i.
+
+Fitness, is a vector of objective values calculated for each distance, when the solution
+is initialized. If there are n measures, we sum the value of the $n(n-1)/2$ comparisons. If the distance
+function is not symmetric, we must symmetrize it by summing instead $n^2$ comparisons (all against all).
+
+
+The vector or all solutions is called a population. In $Julia$, the population is simply a vector of
+solutions.\\
+\HRule \\[0.4cm]
+\begin{math}
+type \; population\\
+\indent  individuals::Vector\{solution\}\\
+end
+\end{math}\\
+\HRule \\[0.4cm]
+
+
+
+\subsection*{Internal working}
+\noindent
+The NSGA-II algorithm is used to minimize the sum of pairwise distances between chosen RNA structures.
+
+
+\subsubsection*{Initialization}
+\noindent
+At first, two popuations are generated. There are options as to how to choose, for example it could
+be a good choice to bias the choice based on free energy in our case. The current implementation simply
+chooses randomly.
+
+\subsubsection*{Iterations}
+\begin{enumerate}
+  \item The two populations (old and new) are merged into a new population of size $2N$.
+  \item The $2N$ population is sorted in non dominated fronts (exclusive sets). These fronts respect two properties.	
+  \begin{itemize}
+    \item within each front, each solution is not dominated by any other from the same front
+    \item every solution of a "better" front is nondominated by every solutions that belong to "inferior" fronts
+  \end{itemize}
+  \item Initialize S = {}. We add the fronts to it in descending order of domination until an addition of a front would make $\left\vert{S}\right\vert \geq$ N. 
+  \item We take $k = N - \left\vert{S}\right\vert $ from the last front, based on crowding distance withing the last front not added.
+  \item We proceed by tournament selection to choose the individuals that will reproduce.
+  \item We generate offsprings from the selected individuals and iterate again.
+\end{enumerate}
+
+\subsubsection*{Output}
+The output of this search is a set of solutions which are nondominated between themselves. We achieve this by 
+sorting into non dominated fronts the last population and taking the dominating front.
+
+% Reproduce the pseudocode with the 
+% https://en.wikibooks.org/wiki/LaTeX/Algorithms_and_Pseudocode
+% procedure NSGA-IIR
+%   Initialize P1 and Q1
+%   for t = 1..NGEN
+%     Rt = Pt U Qt
+%     F = NONDOMINATEDSORT(Rt)
+%     Pt+1 = {}
+%     j = 1
+%     while |Pt+1| + |Fj| <= N
+%       F ={f(i) | i E Fj}
+%       CROWDINGDISTANCE(F)
+%       Pt+1 += Fj
+%       j+=1
+%     end
+%     
+%     k = N - |Pt+1|
+%     Pt+1 = Pt+1 U LASTFRONTSELECTION(Fj, k)
+%     P't+1 = UFTOURNSELECTION(Pt+1, N)
+%     Qt+1 = GENERATEOFFSPRING(P't+1)
+%   end
+% end
+ 
+
+
+
+
+\end{document}
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

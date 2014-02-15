@@ -31,3 +31,8 @@
 
 #Tuples
 #they are immutable, don't even try
+
+
+
+#IMPROVEMENTS
+#is it possible to have directed agressive compilation (like inline...)

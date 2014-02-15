@@ -40,9 +40,9 @@ end
 function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #unit test
   #exhaustive
-  individuals = arrangement[]
+  individuals = solution[]
   for i =  1: cardinality
-    push!(individuals, arrangement([],randomFitnessArray(fitnessLen)))
+    push!(individuals, solution([],randomFitnessArray(fitnessLen)))
   end
   sorts = nonDominatedSort(individuals)
   #no domination within the same front
@@ -75,17 +75,15 @@ end
 function test_evaluate(cardinality::Int, fitnessLen::Int, compare_method = nonDominatedCompare)
   #exhaustive unit test
   #generate the population
-  population = arrangement[]
+  population = solution[]
   for i =  1: cardinality
-    push!(population, arrangement([],randomFitnessArray(fitnessLen)))
+    push!(population, solution([],randomFitnessArray(fitnessLen)))
   end
-  
   #evaluate all individuals
   result = {}
   for i = 1:cardinality
     push!(result, evaluate(population, i, compare_method))
   end
-  
   #verify validity
   for i = 1:cardinality
     if !(isempty(result[i][3]))
@@ -118,61 +116,51 @@ function test_fastDelete(repet::Int, size::Int)
   return true
 end
 
-function test_lastFrontSelection()
-  a = arrangement([], [1,2,3,4,5])
-  b = arrangement([], [0,0,4,2,0])
-  c = arrangement([], [2,0,1,1,1])
-  d = arrangement([], [0,2,2,1,5])
-  e = arrangement([], [2,1,1,1,1])
-  f = arrangement([], [2,2,2,2,2])
-  g = arrangement([], [2,2,2,2,2])
-  h = arrangement([], [2,3,2,2,2])
-  pop = [a,b,c,d,e,f,g,h]
-  maxObjs = [5,5,5,5,5]
-  minObjs = [0,0,0,0,0]
-  
-  
-
-end
 
 
-function test_findEqualVectors(n::Int)
-  #unit test, exhaustive
-  type t
-    x::Int
-    y::Array{Int,1}
-  end
+
+function test_uniqueFitness(n::Int)
+  #exhaustive unit test
   #generate data
-  vals = [t(1, randomFitnessArray(5))]
+  vals = [(1, randomFitnessArray(5))]
   for i = 2:n
-    push!(vals, t(i, randomFitnessArray(5)))
+    push!(vals, (i, randomFitnessArray(5)))
   end
-  
   #generate doubles
   i = 0
   while i < n/2
-    push!(vals, (n+i, vals[rand(1:n)].y))
+    push!(vals, (n+i+1, vals[rand(1:n)][2]))
     i+=1
   end
-  
-  #sort array
-  sort!(vals, by = x->x.y[1])
-  cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  
+  #go through the dict and test for equality
+  d = uniqueFitness(vals)
+  for i in keys(d)
+    if(length(d[i])>1)
+      v = vals[d[i][1]][2]
+      for j in d[i]
+	@test vals[j][2] == v
+      end
+    end
+  end
+  return true  
 end
+
+
+
+
+  
+  
 function test_all()
   #exhaustive
   test_nonDominatedCompare(1000,3)
-  test_nonDominatedSort(2000, 5)
   test_evaluate(1000,5)
   test_fastDelete(2000,2000)
-  
+  test_nonDominatedSort(2000, 5)
+  test_uniqueFitness(1000)
   
   
   
   #non exhaustive
-  test_lastFrontSelection()
-  test_findEqualVectors()
   return true
 end
 
