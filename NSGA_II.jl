@@ -4,11 +4,12 @@
 #genetic algorithm.
 
 #-------------------------imports-------------------------
-using Base.Test
+
 
 
 #-------------------------exported methods-------------------------
-#export 
+#export
+
 
 
 #-------------------------type definitions-------------------------
@@ -17,121 +18,34 @@ immutable solution
   fitness::Vector
 end
 
+
+
 type population
   individuals::Vector{solution}
+  distances::Dict{Vector, FloatingPoint} #this stores the distances result
 end
+
+
 
 #-------------------------genetic algorithm methods-------------------------
-function nonDominatedCompare (a::Vector, b::Vector, comparator = >)
-  # a > b --> 0: a==b, 1: a>b, -1: b>a, pairwise vector comparison
-  #A solution is called nondominated, Pareto optimal, 
-  #Pareto efficient or noninferior, if none of the objective 
-  #functions can be improved in value without degrading some 
-  #of the other objective values.
-  @assert length(a) == length(b)
-  AdomB=false
-  BdomA=false
-  for i in zip(a,b)
-    if i[1] != i[2]
-      if(comparator(i[1], i[2]))
-	AdomB = true
-      else
-	BdomA = true
-      end
-    end
-    
-    if AdomB && BdomA
-      return 0
-    end
-  end
- 
-  if AdomB
-    return 1
-  end
-  if BdomA
-    return -1
-  end
-  if !AdomB && !BdomA
-    return 0
-  end
-end
-
-
-
-function evaluate(pop::population, index::Int, compare_method = nonDominatedCompare)
-  #compare the object at index with the rest of the vector
-  #output must be sorted
-  count = 0
-  dominatedby = (Int)[]
-  indFit = pop[index].fitness
-  #before the index
-  if index!= 1
-    for i = 1: (index-1)
-      if compare_method(pop[i].fitness, indFit) == 1
-        count += 1
-        push!(dominatedby, i)
-      end
-    end
-  end
-  #after the index
-  if index != length(pop)
-    for i = (index+1):length(pop) #exclude the index
-      if compare_method(pop[i].fitness, indFit) == 1
-        count += 1
-        push!(dominatedby, i)
-      end
-    end
-  end
-  return (index, count, dominatedby)
-end
-
-
-
-function fastDelete(values::Vector, deletion::Vector)
-  #both are sorted, we take that into account
-  #deletion vector cannot be empty by definition
-  #start at naturals, not whole integer range
-  @assert values[1] > 0
-  @assert deletion[1] > 0
-  result = Int[]
-  indexDel = 1
-  for i in values
-    #iterate to the next "good" index
-    #the value of deletion is either > or = to i
-    while (deletion[indexDel] < i) && (indexDel < length(deletion))
-      indexDel += 1
-    end
-
-    if i!=deletion[indexDel]
-      push!(result, i)
-    end
-  end
-  return result
-end
-  
-
 function nonDominatedSort(pop::population) 
-  #TO REPLACE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   #multi-objective optimization using evolutionnary algorithms p.43
+  #input: 2N population
+  #output: at least N individuals, the output likely has one front too much
   
-  
-  #step 1 of non dominated sorting
-  #sort the pop in non dominated fronts
-  
-  #could also require population to be pair...
+  #get cutoff
   cutoff = div(length(pop), 2) + length(pop)%2
-  
-  values = {} #to improve...
   len = length(pop)
   
   #1- evaluate the whole population
+  values = (Int,Array{Int,1})[]
   for i = 1:len
-    push!(values, evaluate(pop, i, nonDominatedCompare))
+    push!(values, evaluateAgainstOthers(pop, i, nonDominatedCompare))
   end
   
-  fronts = {}
-  #2- get the fronts
-  while length(values) > cutoff #we stop at half
+  #2- nondominated sort
+  fronts = Array{Int,1}[]
+  while length(values) > cutoff
     #find the "dominators"
     front = filter(x->x[2] == 0, values)
     frontIndices = map(x->x[1], front)
@@ -152,35 +66,23 @@ function nonDominatedSort(pop::population)
   return fronts
 end
 
-function uniqueFitness(a::Array{(Int,Array{Int,1}),1})
-  #map fitness to index (get unique fitness)
-  equal = Dict{Vector{Int}, Vector{Int}}()
-  for i in a
-    equal[i[2]] = push!(get(equal, i[2], Int[]), i[1])
-  end
-  return equal
-end
-      
-   
 
 
-function crowdingDistance(pop::population)
-  #calculate the crowding distance for the 2N population
-  #this is based on "Revisiting the NSGA-II crowding distance computation"
-  
+function crowdingDistance(pop::Vector{solution})
+  #calculate the crowding distance 
   #step 1
   #assing index to keep track after sorting
   values = (Int, Vector)[]
   for i = 1:length(pop)
-    push!(values,(i,pop[i].fitness))
+    push!(values, (i, pop[i].fitness))
   end
   
-  #step 2 -----------------------------------------------------------
+  #step 2 
   #get the unique fitness vectors
   fitnessMapping = uniqueFitness(values)
   fitnesses = keys(fitnessMapping)
   
-  #step 3 -----------------------------------------------------------
+  #step 3 
   #do the crowding distance
   popSize = length(fitnesses) #we need the number of uniques
   vectorSize = length(fitnesses[1]) #all same size
@@ -220,9 +122,165 @@ function crowdingDistance(pop::population)
 end
 
 
+
+function lastFrontSelection!(pop::population, fronts::Array{Array{Int,1},1}, k::Int)
+   #input: 2N population, non dominated fronts, individuals to select from last set
+   #calculate crowding distance for all but last front
+   if length(fronts)>1
+    for i = 1:length(fronts)-1
+      p = pop.individuals[fronts[i]]
+      dist = crowdingDistance(p)
+      merge!(pop.distances, dist)
+    end
+  end
   
+  #last crowding distance is kept local (it will be recalculated after selecting k solutions)
+  #keep in mind that the order of fronts[end] is fixed, keep correspondance between lastfront and it
+  const lastFront = map(x->x.fitness, pop.individuals[fronts[end]])
+  const dist = crowdingDistance(lastFront)
   
+  #create mapping fitness => index
+  fitnessToIndex = Dict{Vector{Int}, Vector{Int}}()
+  for i = 1:(length(lastFront))
+    fitnessToIndex[lastFront[i]] = push!(get(fitnessToIndex, lastFront[i], Int[]), i)
+  end
+  
+  #F is a list of fitness sorted by decreasing crowding distance
+  F = sort(lastFront, rev = true)
+  chosenOnes = Int[]
+  j = 1
+  while length(chosenOnes) != k
+    len = length(fitnessToIndex(F[j]))
+    #more than one solution with same fitness
+    if len > 1
+      sample = rand([1:len])
+      index = fitnessToIndex[F[j]][sample]
+      push!(consenOnes, index)
+      #individuals can be picked only once
+      deleteat!(fitnessToIndex[F[j]], sample)
+    #only one solution with this fitness
+    else
+      index = fitnessToIndex[F[j]][1]
+      push!(chosenOnes, index)
+      deleteat!(F, j)
+    end
+    j= (j+1)%length(F)
+  end
+  
+  #assign the crowding distance to the now confirmed last front
+  p = pop.individuals[chosenOnes]
+  dist = crowdingDistance(p)
+  merge!(pop.distances, dist)
+#   return 
+end
 
 
+
+
+function UFTournSelection(L::population)
+
+end
+
+
+ 
+
+#-------------------------helper methods-------------------------
+function nonDominatedCompare (a::Vector, b::Vector, comparator = >)
+  # a > b --> 0: a==b, 1: a>b, -1: b>a, pairwise vector comparison
+  #nonDominatedCompare([0, 0, 2], [0, 0, 1]) = 1
+  #nonDominatedCompare([0, 0, 1], [0, 1, 0]) = 0 
+  #nonDominatedCompare([1, 0, 1], [1, 1, 1]) =-1
+  @assert length(a) == length(b)
+  AdomB=false
+  BdomA=false
+  for i in zip(a,b)
+    if i[1] != i[2]
+      if(comparator(i[1], i[2]))
+	AdomB = true
+      else
+	BdomA = true
+      end
+    end
+    #immediate return if nondominated
+    if AdomB && BdomA
+      return 0
+    end
+  end
+  #return result
+  if AdomB
+    return 1
+  end
+  if BdomA
+    return -1
+  end
+  if !AdomB && !BdomA
+    return 0
+  end
+end
+
+
+
+function evaluateAgainstOthers(pop::population, index::Int, compare_method = nonDominatedCompare)
+  #compare the object at index with the rest of the vector
+  count = 0
+  dominatedby = Int[]
+  indFit = pop[index].fitness
+  #before the index
+  if index!= 1
+    for i = 1: (index-1)
+      if compare_method(pop[i].fitness, indFit) == 1
+        count += 1
+        push!(dominatedby, i)
+      end
+    end
+  end
+  #after the index
+  if index != length(pop)
+    for i = (index+1):length(pop) #exclude the index
+      if compare_method(pop[i].fitness, indFit) == 1
+        count += 1
+        push!(dominatedby, i)
+      end
+    end
+  end
+  #output is sorted
+  return (index, count, dominatedby)
+end
+
+
+
+function fastDelete(values::Vector{Int}, deletion::Vector{Int})
+  #helper, inside non dominated sorting
+  #both vectors are sorted, start in natural, start > 0, nonempty
+  @assert values[1] > 0
+  @assert deletion[1] > 0
+  result = Int[]
+  indexDel = 1
+  for i in values
+    #iterate to the next "good" index, value > or = to i
+    while (deletion[indexDel] < i) && (indexDel < length(deletion))
+      indexDel += 1
+    end
+    if i!=deletion[indexDel]
+      push!(result, i)
+    end
+  end
+  return result
+end
+
+
+
+function uniqueFitness(a::Array{(Int,Array{Int,1}),1})
+  #helper used in crowdingDistance()
+  #map fitness to index (get unique fitness)
+  equal = Dict{Vector{Int}, Vector{Int}}()
+  for i in a
+    equal[i[2]] = push!(get(equal, i[2], Int[]), i[1])
+  end
+  return equal
+end
+
+  
+  
 #--module end
 #end
