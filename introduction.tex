@@ -41,8 +41,9 @@ Dr.~François \textsc{Major}
 \subsection*{Consensus sequence search (mccons)}
 \begin{enumerate}
   \item There is a family of multiple RNA sequences who share a common function.
-  \item There is a reason to suspect that the function is related to structure. 
-  \item There is a tool which can give you different possibilities\todo[inline]{possibilities? (a structure ensemble, set of subptimals ranked by their energy} of structure (suboptimals) for each sequence.
+  \item There is a reason to suspect that a common structure could explain the function. 
+  \item There is a tool which outputs a set of structural alternatives for each molecule. \todo[inline]{possibilities? (a structure ensemble, set of subptimals ranked by their energy. Do suboptimals
+  include the MFE? Doesn't need to be ordered by energy really}
 \end{enumerate}
 An example of use would be to search for common structures for tRNAs, IRE or families within Rfam.
 
@@ -79,7 +80,7 @@ The current mccons version takes two inputs:
 \subsection*{Representation}
 A solution is created by randomly\todo[inline]{randomly only for initialization step, no?} choosing a structure for each RNA family. In the language of
 genetic algorithms, a solution is an "individual".
-In $Julia$, a solution is represented by an immutable type with two fields, units and fitness.
+In $Julia$, a solution is represented by an immutable type with two fields, units and fitness.\\
 \HRule \\[0.4cm]
 \begin{math}
 \noindent
@@ -168,50 +169,35 @@ sorting the last population into non dominated fronts, and then taking the domin
 \end{algorithmic}
 
 
+\section*{TRIE EXACT VERSION}
+\subsection*{metric}
+If all the distance functions used to compare respect all of the following conditions:
+\begin{enumerate}
+  \item d(x, y) $\geq$ 0 (non-negativity)
+  \item d(x, y) = 0 iff x = y (identity of indiscernibles)
+  \item d(x, y) = d(y, x) (symmetry)
+  \item d(x, z) $\leq$ d(x, y) + d(y, z) (triangle inequality)
+\end{enumerate}\noindent
+they can be referred to as being $metrics$. 
+\subsection*{keys}
+There exists a cleverer way to find similar objects without having to compare all to all
+$O(n^2)$. This is entierly dependent on the triangle inequality property. The basic idea 
+is that by selecting a subset of objects (the $keys$) which have as much distance between them as possible (according
+to the metrics in use).\\ \noindent
+In the particular case RNA comparison, the most obvious choice is to use RNA abstract shapes[RNASHAPES citation]
+and choose keys covering all the classes of shape.
+\subsection*{comparing}
+Since the subset of keys chosen should be a lot smaller, such as $log(n)$ on $n$ elements, there are $O(nlog(n))$ comparisons to be made 
+for the n objects against the log(n) set of keys.
+\subsection*{trie}
+The really interesting part is that to make it easy to figure out which object is really similar to another, the objects (a reference to them at least)
+are entered in a trie. A trie (digital tree, radix tree or prefix tree) is an interesting data structure that allows very fast re{\bf{trie}}val. The trie can
+be seen as a deterministic finite state automata. To store objects in the trie, we use the ordered list of distances to objects in the key set. 
+For example, say we have an object $o$ which has distance $[1,2,3]$ to the key set.
+
+
+
+
 
 
 \end{document}
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
