@@ -34,11 +34,12 @@ function nonDominatedSort(pop::population)
   #output: at least N individuals, the output likely has one front too much
   
   #get cutoff
-  cutoff = div(length(pop), 2) + length(pop)%2
-  len = length(pop)
+  len = length(pop.individuals)
+  cutoff = div(len, 2) + len%2
+  
   
   #1- evaluate the whole population
-  values = (Int,Array{Int,1})[]
+  values = (Int, Int, Array{Int,1})[]
   for i = 1:len
     push!(values, evaluateAgainstOthers(pop, i, nonDominatedCompare))
   end
@@ -74,7 +75,7 @@ function crowdingDistance(pop::Vector{solution})
   #assing index to keep track after sorting
   values = (Int, Vector)[]
   for i = 1:length(pop)
-    push!(values, (i, pop[i].fitness))
+    push!(values, (i, pop.individuals[i].fitness))
   end
   
   #step 2 
@@ -224,20 +225,20 @@ function evaluateAgainstOthers(pop::population, index::Int, compare_method = non
   #compare the object at index with the rest of the vector
   count = 0
   dominatedby = Int[]
-  indFit = pop[index].fitness
+  indFit = pop.individuals[index].fitness
   #before the index
   if index!= 1
     for i = 1: (index-1)
-      if compare_method(pop[i].fitness, indFit) == 1
+      if compare_method(pop.individuals[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
     end
   end
   #after the index
-  if index != length(pop)
-    for i = (index+1):length(pop) #exclude the index
-      if compare_method(pop[i].fitness, indFit) == 1
+  if index != length(pop.individuals)
+    for i = (index+1):length(pop.individuals) #exclude the index
+      if compare_method(pop.individuals[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
@@ -249,7 +250,7 @@ end
 
 
 
-function fastDelete(values::Vector{Int}, deletion::Vector{Int})
+function fastDelete(values::Vector, deletion::Vector)
   #helper, inside non dominated sorting
   #both vectors are sorted, start in natural, start > 0, nonempty
   @assert values[1] > 0

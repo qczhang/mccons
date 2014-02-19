@@ -40,17 +40,19 @@ end
 function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #unit test
   #exhaustive
-  individuals = solution[]
+  pop = population(Vector{solution}[],Dict{Vector, FloatingPoint}())
   for i =  1: cardinality
-    push!(individuals, solution([],randomFitnessArray(fitnessLen)))
+    push!(pop.individuals, solution([],randomFitnessArray(fitnessLen)))
   end
-  sorts = nonDominatedSort(individuals)
+  
+
+  sorts = nonDominatedSort(pop)
   #no domination within the same front
   for i = 1:length(sorts)
     ar = sorts[i]
     for j in ar
       for k in ar
-	@test nonDominatedCompare(individuals[j].fitness, individuals[k].fitness) == 0
+	@test nonDominatedCompare(pop.individuals[j].fitness, pop.individuals[k].fitness) == 0
       end
     end
   end
@@ -62,7 +64,7 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
       b = sorts[i+1]
       for j in a
 	for k in b
-	  @test nonDominatedCompare(individuals[j].fitness, individuals[k].fitness) in (0,1)
+	  @test nonDominatedCompare(pop.individuals[j].fitness, pop.individuals[k].fitness) in (0,1)
 	end
       end
     end
@@ -72,23 +74,23 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
 end
   
   
-function test_evaluate(cardinality::Int, fitnessLen::Int, compare_method = nonDominatedCompare)
+function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_method = nonDominatedCompare)
   #exhaustive unit test
   #generate the population
-  population = solution[]
+  pop = population(Vector{solution}[],Dict{Vector, FloatingPoint}())
   for i =  1: cardinality
-    push!(population, solution([],randomFitnessArray(fitnessLen)))
+    push!(pop.individuals, solution([],randomFitnessArray(fitnessLen)))
   end
   #evaluate all individuals
   result = {}
   for i = 1:cardinality
-    push!(result, evaluate(population, i, compare_method))
+    push!(result, evaluateAgainstOthers(pop, i, compare_method))
   end
   #verify validity
   for i = 1:cardinality
     if !(isempty(result[i][3]))
       for j in result[i][3]
-	@test compare_method(population[result[i][1]].fitness, population[j].fitness) == -1
+	@test compare_method(pop.individuals[result[i][1]].fitness, pop.individuals[j].fitness) == -1
       end
     end
   end
@@ -153,7 +155,7 @@ end
 function test_all()
   #exhaustive
   test_nonDominatedCompare(1000,3)
-  test_evaluate(1000,5)
+  test_evaluateAgainstOthers(1000,5)
   test_fastDelete(2000,2000)
   test_nonDominatedSort(2000, 5)
   test_uniqueFitness(1000)
