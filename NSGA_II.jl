@@ -19,11 +19,20 @@ immutable solution
 end
 
 
+#every fitness has an associated crowding distance too
+#the key is not the individual but its fitness
+#	-same fitness implies same front
+#	-same fitness implies same crowding (but is treated correctly in the last front selection)
 
+#\todo: add an assertion that solutions must have the same size and type of fitness vector 
 type population
-  individuals::Vector{solution}
-  distances::Dict{Vector, FloatingPoint} #this stores the distances result
+  solutions::Vector{solution}
+  distances::Dict{Vector, (Int, FloatingPoint)} #distances[fitness] = (Front, CrowdingDistance)
 end
+
+
+
+typealias hallOfFame population
 
 
 
@@ -31,20 +40,21 @@ end
 function nonDominatedSort(pop::population) 
   #multi-objective optimization using evolutionnary algorithms p.43
   #input: 2N population
-  #output: at least N individuals, the output likely has one front too much
+  #output: at least N solutions, the output likely has one front too much
   
   #get cutoff
-  len = length(pop.individuals)
+  len = length(pop.solutions)
   cutoff = div(len, 2) + len%2
   
-  
-  #1- evaluate the whole population
+  #step 1
+  #evaluate the whole population
   values = (Int, Int, Array{Int,1})[]
   for i = 1:len
     push!(values, evaluateAgainstOthers(pop, i, nonDominatedCompare))
   end
   
-  #2- nondominated sort
+  #step 2 
+  #nondominated sort
   fronts = Array{Int,1}[]
   while length(values) > cutoff
     #find the "dominators"
@@ -69,81 +79,107 @@ end
 
 
 
-function crowdingDistance(pop::Vector{solution})
-  #calculate the crowding distance 
-  #step 1
-  #assing index to keep track after sorting
-  values = (Int, Vector)[]
-  for i = 1:length(pop)
-    push!(values, (i, pop.individuals[i].fitness))
+function addToHallOfFame(wholePopulation::population, firstFrontIndices::Vector{Int}, bestPop::hallOfFame)
+  #get the first front from the whole population
+  firstFront = wholePopulation.solutions[firstFrontIndices]
+  
+  #add the first front to the hall of fame
+  for i in firstFront
+    push!(bestPop.solutions, pop[i])
   end
   
-  #step 2 
-  #get the unique fitness vectors
-  fitnessMapping = uniqueFitness(values)
-  fitnesses = keys(fitnessMapping)
-  
-  #step 3 
-  #do the crowding distance
-  popSize = length(fitnesses) #we need the number of uniques
-  vectorSize = length(fitnesses[1]) #all same size
-  
-  #we use only the fitnesses
-  sorts = {} #think about the type...
-  for i = 1:vectorSize
-    push!(sorts, sort(fitnesses, by = x->x[i]), rev =true)
+  #acquire the domination values
+  values = (Int, Int, Array{Int,1})[]
+  for i=1:length(bestPop.solutions)
+    push!(values, evaluateAgainstOthers(bestPop, i, nonDominatedCompare))
   end
   
-  #get the max and min of each objective
-  minFitnesses = map(x->x[end], sorts)
-  maxFitnesses = map(x->x[1],   sorts)
-  rangeSize = map(x->x[1]-x[2], zip(maxFitnesses, minFitnesses))
+  #get the first front
+  firstFront = filter(x->x[2]==0, values)
   
-  #test
-  map(x-> @assert x>=0, rangeSize )
+  #get first front indices
+  firstFrontIndices = map(x->x[1], firstFront)
   
-  #assign infinite distance to extremities
-  distances = Dict{Vector{Int}, Float}()
-  #initialize at zero
-  for i in fitnesses
-    distances[i] = 0
-  end
-  
-  map(x->distances[x[end]] = Inf, sorts)
-  map(x->distances[x[1]]   = Inf, sorts)
-  
-  #calculate the other ones
-  for i = 1:vectorSize
-    for j = 2:(popSize-1) #first and last are already calculated
-      distances[sorts[i][j]] += (sorts[i][j-1] - sorts[i][j+1])/rangeSize[i]
-    end
-  end
-  
-  return distances
+  #reassign the hall of fame
+  bestPop.individuals = bestPop[firstFrontIndices]
 end
 
 
 
-function lastFrontSelection!(pop::population, fronts::Array{Array{Int,1},1}, k::Int)
-   #input: 2N population, non dominated fronts, individuals to select from last set
-   #calculate crowding distance for all but last front
-   if length(fronts)>1
-    for i = 1:length(fronts)-1
-      p = pop.individuals[fronts[i]]
-      dist = crowdingDistance(p)
-      merge!(pop.distances, dist)
+
+function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}, frontID::Int, update::Bool)
+  #calculate and modify the crowding and front value in the whole population for a certain front
+  #don't use if on the last front, it doesn't make any sense
+  #step 1
+  #fetch the individual fitness from the front
+  front = map(x->x.fitness, wholePopulation.solutions[frontIndices])
+  
+  #step 2
+  #create a dict {fitness => crowdingDistance}
+  fitnessToCrowding = Dict{Vector, (Int, FloatingPoint)}()
+  for i in front
+    fitnessToCrowding[i] = (frontID, 0.0)
+  end
+
+  fitKeys = collect(keys(fitnessToCrowding))
+  
+  #step 3 
+  #do the crowding distance
+  numUniqueFitness = length(fitKeys)
+  fitnessVectorSize = length(fitKeys[1])
+  
+  #step 4
+  #reverse sort all the unique fitness vectors per each objective value
+  sorts = {} #todo: static type this one
+  for i = 1:vectorSize
+    push!(sorts, sort(fitKeys, by = x->x[i]), rev = true)
+  end
+  
+  #step 5
+  #get the max and min of each objective
+  maxFitnesses = map(x->x[1],   sorts)
+  minFitnesses = map(x->x[end], sorts)
+  rangeSize = map(x->x[1]-x[2], zip(maxFitnesses, minFitnesses))
+  
+  #step 6
+  #assign infinite crowding distance to maximum and minimum fitness vectors for each objective 
+  map(x->fitnessToCrowding[x[end]] = (frontId, Inf), sorts)
+  map(x->fitnessToCrowding[x[1]]   = (frontId, Inf), sorts)
+  
+  #step 7
+  #assign crowding distances to the other fitness vectors for each objectives
+  for i = 1:fitnessVectorSize
+    for j = 2:(numUniqueFitness-1)
+      fitnessToCrowding[sorts[i][j]] = (frontID, (fitnessToCrowding[sorts[i][j]][2] + (((sorts[i][j-1] - sorts[i][j+1]))/rangeSize[i])))
     end
   end
   
-  #last crowding distance is kept local (it will be recalculated after selecting k solutions)
-  #keep in mind that the order of fronts[end] is fixed, keep correspondance between lastfront and it
-  const lastFront = map(x->x.fitness, pop.individuals[fronts[end]])
-  const dist = crowdingDistance(lastFront)
+  #step 8
+  #merge the front crowding distance dictionary with the one of the population
+  #this assigns both the crowding distance and the front value
+  if update == true
+    merge!(wholePopulation.distances, fitnessToCrowding)
+  end
   
-  #create mapping fitness => index
+  #step 9
+  #return
+  return fitnessToCrowding
+end
+
+
+
+
+function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vector{Int}, lastFrontId::Int, k::Int)
+  #select k solutions from the last front 
+  
+  #create mapping fitness => crowding
+  fitnessToCrowding = crowdingDistance(wholePopulation, lastFrontIndices, -1, false)
+  
+  #create mapping fitness => lastFrontIndices index
   fitnessToIndex = Dict{Vector{Int}, Vector{Int}}()
-  for i = 1:(length(lastFront))
-    fitnessToIndex[lastFront[i]] = push!(get(fitnessToIndex, lastFront[i], Int[]), i)
+  for i = 1:length(lastFrontIndices)
+    fitnessAtIndex = wholePopulation.solutions[lastFrontIndices[i]].fitness
+    fitnessToIndex[fitnessAtIndex] = push!(get(fitnessToIndex, fitnessAtIndex, Int[]), lastFrontIndices[i])
   end
   
   #F is a list of fitness sorted by decreasing crowding distance
@@ -157,7 +193,7 @@ function lastFrontSelection!(pop::population, fronts::Array{Array{Int,1},1}, k::
       sample = rand([1:len])
       index = fitnessToIndex[F[j]][sample]
       push!(consenOnes, index)
-      #individuals can be picked only once
+      #solutions can be picked only once
       deleteat!(fitnessToIndex[F[j]], sample)
     #only one solution with this fitness
     else
@@ -168,18 +204,53 @@ function lastFrontSelection!(pop::population, fronts::Array{Array{Int,1},1}, k::
     j= (j+1)%length(F)
   end
   
-  #assign the crowding distance to the now confirmed last front
-  p = pop.individuals[chosenOnes]
-  dist = crowdingDistance(p)
-  merge!(pop.distances, dist)
-#   return 
+  #get the new crowding distance values for the last front and push it to the whole population
+  crowdingDistance(wholePopulation, chosenOnes, lastFrontID, true)
+  
+   return chosenOnes
 end
 
 
 
+function sample(L::Vector, k::Int)
+  #take k elements from L without replacing
+  L2 = copy(L)
+  result = {}
+  for i = 1:k
+    randIndex = rand(1:length(L2))
+    push!(result, L2[randIndex])
+    deleteat!(L2, randIndex)
+  end
+  return result
+end  
+
+
 
 function UFTournSelection(L::population)
-
+  #unique fitness based tournament selection
+  N = length(L.solutions)
+  
+  #map fitnesses to indices
+  values = (Int, Vector)[]
+  for i=1:length(population.solutions)
+    push!(values, (i, population.solutions[i].fitness))
+  end
+  
+  fitnessToIndex = uniqueFitness(values)
+  
+  #extreme case : all fitnesses are equal
+  if length(fitnessToIndex) == 1
+    return L
+  end
+  
+  #
+  S = {}
+  #while the size of S is not equal to N...
+  while length(S) != N
+    k = min(2*(N - length(S)), length(fitnessToIndex))
+  end
+  
+  
 end
 
 
@@ -225,20 +296,20 @@ function evaluateAgainstOthers(pop::population, index::Int, compare_method = non
   #compare the object at index with the rest of the vector
   count = 0
   dominatedby = Int[]
-  indFit = pop.individuals[index].fitness
+  indFit = pop.solutions[index].fitness
   #before the index
   if index!= 1
     for i = 1: (index-1)
-      if compare_method(pop.individuals[i].fitness, indFit) == 1
+      if compare_method(pop.solutions[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
     end
   end
   #after the index
-  if index != length(pop.individuals)
-    for i = (index+1):length(pop.individuals) #exclude the index
-      if compare_method(pop.individuals[i].fitness, indFit) == 1
+  if index != length(pop.solutions)
+    for i = (index+1):length(pop.solutions) #exclude the index
+      if compare_method(pop.solutions[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
@@ -271,15 +342,6 @@ end
 
 
 
-function uniqueFitness(a::Array{(Int,Array{Int,1}),1})
-  #helper used in crowdingDistance()
-  #map fitness to index (get unique fitness)
-  equal = Dict{Vector{Int}, Vector{Int}}()
-  for i in a
-    equal[i[2]] = push!(get(equal, i[2], Int[]), i[1])
-  end
-  return equal
-end
 
   
   
