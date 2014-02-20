@@ -196,8 +196,24 @@ be seen as a deterministic finite state automata. To store objects in the trie, 
 For example, say we have an object $o$ which has distance $[1,2,3]$ to the key set.
 
 
+\section*{Suboptimal structure compression}
+Being able to summarize (or compress) the set of suboptimal structures is an interesting heuristic to lower the
+runtime of similarity search by comparing less structures. This comes however at the price of maybe missing 
+some crucial structures that would be a better fit.
+One interesting way to compress the suboptimal space is to categorize suboptimals based on their abstract shape \cite{abstractShapes2004}.
 
 
+\todo[inline]{how does the Gibbs free energy relate to probability of existence (1/exponential?)?}
+\todo[inline]
 
+\begin{thebibliography}{42}
+
+\bibitem{abstractShapes2004}
+  Robert Giergerich, Bj{\"o}rn Vo{\ss} and Marc Rehhmsmeier,
+  \emph{Abstract shapes of RNA}.
+  NAR,
+  2004.
+
+\end{thebibliography}
 
 \end{document}

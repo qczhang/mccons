@@ -174,6 +174,128 @@ function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   return max(hausdorffLefttoRight, hausdorffRightToLeft)
 end
 
+
+function RNAShape_fetchStems(structure::String)
+  #assert given structure is adequate
+  @assert testDotBracket(structure) == true
+  list_opener = {}
+  list_stems = {}
+  
+  i = 1
+  list_stem_end = {}
+    
+  # separate in stems
+  while i <= length(structure)
+  
+    #add to opening list  
+    if structure[i] == '('
+      push!(list_opener, i)
+    
+    #find the closing in the opening list
+    elseif structure[i] == ')'
+      current_stem = Dict()
+      current_stem["opener"] = Int[]
+      current_stem["closer"] = Int[]
+      current_stem["open_dict"] = Dict{Int,Int}()
+      
+      while i <= length(structure)
+	if structure[i] == ')'
+	  opener = pop!(list_opener)
+	  push!(current_stem["opener"], opener)
+	  push!(current_stem["closer"], i)
+	  current_stem["open_dict"][opener] = i
+	  
+	  if (!isempty(list_opener)) && (list_opener[end] in list_stem_end)
+	    push!(list_stem_end, list_opener[end])
+	    break
+	  end
+	  
+	elseif structure[i] =='('
+	  if (!isempty(list_opener))
+	    push!(list_stem_end, list_opener[end])
+	  end  
+	  i -= 1
+	  break
+	  
+	end 
+        i += 1 
+      end #inner while end
+      push!(list_stems, current_stem)
+    end
+    i += 1
+  end
+  return list_stems
+end
+
+function RNAShape(structure::String)
+  #fetch the stems
+  list_stems = RNAShape_fetchStems(structure)
+
+  # build the level1 for each stems
+  range_occupied = {}
+  dict_lvl1 = Dict()
+  for stem in list_stems
+    range_open = collect([min(stem["opener"]) : max(stem["opener"])+1])
+    range_close = collect(min(stem["closer"]) : max(stem["closer"])+1])
+    range_occupied = vcat(range_occupied, range_open, range_close)
+
+    temp_lvl1_open = ""
+    temp_lvl1_close = ""
+    last_opener = None
+    last_closer = None
+    
+    for opener in sorted(stem["opener"])
+      if last_opener == None:
+	temp_lvl1_open += "["
+	temp_lvl1_close = "]" + temp_lvl1_close
+      else
+	if math.fabs(opener - last_opener) != 1
+	  temp_lvl1_open += "_"
+	end
+	if abs(stem["open_dict"][opener] - last_closer) != 1
+	  temp_lvl1_close = "_" + temp_lvl1_close
+	end
+	if (endswith(temp_lvl1_open , "_")) || (beginswith(temp_lvl1_close, "_"))
+	  temp_lvl1_open += "["
+	  temp_lvl1_close = "]" + temp_lvl1_close
+	end
+      end
+      last_opener = opener
+      last_closer = stem["open_dict"][opener]
+    end
+    
+    #rework this one
+    dict_lvl1[min(stem["opener"])] = dict(elem=temp_lvl1_open, lvl5="[")
+    dict_lvl1[min(stem["closer"])] = dict(elem=temp_lvl1_close, lvl5="]")
+
+  # assemble level1
+  level1 = ""
+  level5 = ""
+  for i, element in enumerate(structure):
+    if str(i) in dict_lvl1:
+      level1 += dict_lvl1[str(i)]["elem"].strip()
+      level5 += dict_lvl1[str(i)]["lvl5"]
+    if element == "." and not level1.endswith("_") and not i in range_occupied:
+      level1 += "_"
+
+  level1 = level1.strip().replace("[_]", "[]").replace(" ", "")
+  level3 = level1.replace("_", "")
+
+  return level5, level3, level1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #-------------------------unit test methods-------------------------
 function test_testDotBracket()
   #unit test
