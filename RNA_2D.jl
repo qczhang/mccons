@@ -120,7 +120,7 @@ function fastCompareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   id1 = 1
   id2 = 1
   result = 0
-  while i < min(bp1[end][1], bp2[end][1])
+  while i < minimum(bp1[end][1], bp2[end][1])
     res = Int[]
     #add the 2nd of tuple if first is equal to index
     #println(bp1[id1])
@@ -162,16 +162,16 @@ end
 
 function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   function distanceBP(a::(Int, Int), b::(Int, Int))
-    return max((abs(a[1]-b[1])), abs(a[2]-b[2]))
+    return maximum((abs(a[1]-b[1])), abs(a[2]-b[2]))
   end
   
   function distanceBPtoSet(a::(Int, Int), b::Vector{(Int,Int)})
-    return min(map(x->compareHausdorff(a,x), b))
+    return minimum(map(x->compareHausdorff(a,x), b))
   end
   
-  hausdorffLefttoRight = max(map(x->distanceBPtoSet(x,bp2), bp1))
-  hausdorffRightToLeft = min(map(x->distanceBPtoSet(x,bp1), bp2))
-  return max(hausdorffLefttoRight, hausdorffRightToLeft)
+  hausdorffLefttoRight = maximum(map(x->distanceBPtoSet(x,bp2), bp1))
+  hausdorffRightToLeft = minimum(map(x->distanceBPtoSet(x,bp1), bp2))
+  return maximum(hausdorffLefttoRight, hausdorffRightToLeft)
 end
 
 
@@ -235,8 +235,8 @@ function RNAShape(structure::String)
   range_occupied = {}
   dict_lvl1 = Dict()
   for stem in list_stems
-    range_open = collect([min(stem["opener"]) : max(stem["opener"])+1])
-    range_close = collect(min(stem["closer"]) : max(stem["closer"])+1])
+    range_open  = collect([(minimum(stem["opener"])) : (maximum(stem["opener"])+1)])
+    range_close = collect([(minimum(stem["closer"])) : (maximum(stem["closer"])+1)])
     range_occupied = vcat(range_occupied, range_open, range_close)
 
     temp_lvl1_open = ""
@@ -244,12 +244,12 @@ function RNAShape(structure::String)
     last_opener = None
     last_closer = None
     
-    for opener in sorted(stem["opener"])
-      if last_opener == None:
+    for opener in sort(stem["opener"])
+      if last_opener == None
 	temp_lvl1_open += "["
 	temp_lvl1_close = "]" + temp_lvl1_close
       else
-	if math.fabs(opener - last_opener) != 1
+	if abs(opener - last_opener) != 1
 	  temp_lvl1_open += "_"
 	end
 	if abs(stem["open_dict"][opener] - last_closer) != 1
@@ -265,24 +265,34 @@ function RNAShape(structure::String)
     end
     
     #rework this one
-    dict_lvl1[min(stem["opener"])] = dict(elem=temp_lvl1_open, lvl5="[")
-    dict_lvl1[min(stem["closer"])] = dict(elem=temp_lvl1_close, lvl5="]")
-
+    dict_lvl1[minimum(stem["opener"])] = dict(elem=temp_lvl1_open, lvl5="[")
+    dict_lvl1[minimum(stem["closer"])] = dict(elem=temp_lvl1_close, lvl5="]")
+  end
+  
   # assemble level1
   level1 = ""
   level5 = ""
-  for i, element in enumerate(structure):
-    if str(i) in dict_lvl1:
-      level1 += dict_lvl1[str(i)]["elem"].strip()
-      level5 += dict_lvl1[str(i)]["lvl5"]
-    if element == "." and not level1.endswith("_") and not i in range_occupied:
+  for i= 1:length(structure)
+    if i in dict_lvl1
+      level1 += chomp(dict_lvl1[i]["elem"]) #wtf is that?
+      level5 += chomp(dict_lvl1[i]["lvl5"])
+    end
+    
+    if structure[i] == "." && (! endswith(level1, "_")) && (!(i in range_occupied))
       level1 += "_"
+    end
+    
+  end
+  level1 = chomp(level1)
+  level1 = replace(level1, "[_]", "[]")
+  level1 = replace(level1, " ", "")  
+  #level1 = level1.strip().replace("[_]", "[]").replace(" ", "")
 
-  level1 = level1.strip().replace("[_]", "[]").replace(" ", "")
-  level3 = level1.replace("_", "")
+  level3 = replace(level3, "_", "")
+  #level3 = level1.replace("_", "")
 
-  return level5, level3, level1
-
+  return {level5, level3, level1}
+end
 
 
 
