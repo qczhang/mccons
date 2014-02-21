@@ -1,0 +1,34 @@
+>E.coli 1
+UGCCUGGCGGCCGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 2nd)
+>E.coli 2
+UGCCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCUCAUGCGAGAGUAGGGAACUGCCAGGCAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 5th)
+>E.coli 3
+UGCCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 3rd)
+>E.coli 4
+UGUCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGACAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 3rd)
+>E.coli 5
+UGCCUGGCGGCCUUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAU
+..........xx..x.............................x........................................................................... strong DMS
+..................................x..xx............xx.....x......x...................................................... moderate DMS
+(((((((((((....((((((((....(((((((.............))))..)))...)))))).)).(((((((((((((((((...)))))))))))))))))..))))))))))). native (2AW4) TP FP FN Mthw
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 5th) 41 4 2 93.2
+(((((((((((((((((((((((....(((((((.............))))..)))...)))))).))(((...))).((((((((...)))))))).....)))))..)))))))))). Mathews et al. 33 8 10 78.6
+>E.coli 6
+UGUCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGACUCCCCAUGCGAGAGUAGGGAACUGCCAGACAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 3rd)
+>E.coli 8
+UGCCUGGCGGCCUUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGGCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 5th)
+>E.coli 10
+UGUCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCUCAUGCGAGAGUAGGGAACUGCCAUGCAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 2nd)
+>E.coli 11
+UGCCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAUCA
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..))))))))))... ( 3rd)
+>E.coli 14
+UGCCUGGCGGCCGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGACAU
+((((((((((.....(((((((((((..((((((.............))))..))))).)))))).))((((((((((((((((((...))))))))))))))))))..)))))))))). ( 2nd)
