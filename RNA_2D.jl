@@ -227,14 +227,24 @@ function RNAShape_fetchStems(structure::String)
   return list_stems
 end
 
+
+a = "((..))"
+b = "((...))((.))"
+c = "(......)(...)(...)"
+
+
 function RNAShape(structure::String)
   #fetch the stems
   list_stems = RNAShape_fetchStems(structure)
+  
+  #for convenience
+  add(a::String, b::String) = string(a,b)
 
   # build the level1 for each stems
   range_occupied = {}
   dict_lvl1 = Dict()
   for stem in list_stems
+    println("for $stem in $list_stems)
     range_open  = collect([(minimum(stem["opener"])) : (maximum(stem["opener"])+1)])
     range_close = collect([(minimum(stem["closer"])) : (maximum(stem["closer"])+1)])
     range_occupied = vcat(range_occupied, range_open, range_close)
@@ -246,49 +256,49 @@ function RNAShape(structure::String)
     
     for opener in sort(stem["opener"])
       if last_opener == None
-	temp_lvl1_open += "["
-	temp_lvl1_close = "]" + temp_lvl1_close
+	temp_lvl1_open = add(temp_lvl1_open, "[")
+	temp_lvl1_close = add("]", temp_lvl1_close)
       else
 	if abs(opener - last_opener) != 1
-	  temp_lvl1_open += "_"
+	  temp_lvl1_open = add(temp_lvl1_open, "_")
 	end
 	if abs(stem["open_dict"][opener] - last_closer) != 1
-	  temp_lvl1_close = "_" + temp_lvl1_close
+	  temp_lvl1_close = add("_", temp_lvl1_close)
 	end
 	if (endswith(temp_lvl1_open , "_")) || (beginswith(temp_lvl1_close, "_"))
-	  temp_lvl1_open += "["
-	  temp_lvl1_close = "]" + temp_lvl1_close
+	  temp_lvl1_open = add(temp_lvl1_open, "[")
+	  temp_lvl1_close = add("]", temp_lvl1_close)
 	end
       end
       last_opener = opener
       last_closer = stem["open_dict"][opener]
     end
     
-    #rework this one
-    dict_lvl1[minimum(stem["opener"])] = dict(elem=temp_lvl1_open, lvl5="[")
-    dict_lvl1[minimum(stem["closer"])] = dict(elem=temp_lvl1_close, lvl5="]")
+    
+    dict_lvl1[minimum(stem["opener"])] = {"elem" => temp_lvl1_open,  "lvl5" => "["}
+    dict_lvl1[minimum(stem["closer"])] = {"elem" => temp_lvl1_close, "lvl5" => "]"}
   end
   
   # assemble level1
   level1 = ""
   level5 = ""
   for i= 1:length(structure)
+  
     if i in dict_lvl1
-      level1 += chomp(dict_lvl1[i]["elem"]) #wtf is that?
-      level5 += chomp(dict_lvl1[i]["lvl5"])
+      level1 = add(level1, dict_lvl1[i]["elem"])
+      level5 = add(level5, dict_lvl1[i]["lvl5"])
     end
     
     if structure[i] == "." && (! endswith(level1, "_")) && (!(i in range_occupied))
-      level1 += "_"
+      level1 = add(level1, "_")
     end
     
   end
-  level1 = chomp(level1)
   level1 = replace(level1, "[_]", "[]")
   level1 = replace(level1, " ", "")  
   #level1 = level1.strip().replace("[_]", "[]").replace(" ", "")
 
-  level3 = replace(level3, "_", "")
+  level3 = replace(level1, "_", "")
   #level3 = level1.replace("_", "")
 
   return {level5, level3, level1}
