@@ -228,12 +228,10 @@ function RNAShape_fetchStems(structure::String)
 end
 
 
-a = "((..))"
-b = "((...))((.))"
-c = "(......)(...)(...)"
 
 
-function RNAShape(structure::String)
+function RNAshapes(structure::String)
+  #returns leve 1, 3 and 5 or RNAshapes (from Bielefeld)
   #fetch the stems
   list_stems = RNAShape_fetchStems(structure)
   
@@ -244,11 +242,14 @@ function RNAShape(structure::String)
   range_occupied = {}
   dict_lvl1 = Dict()
   for stem in list_stems
-    println("for $stem in $list_stems)
-    range_open  = collect([(minimum(stem["opener"])) : (maximum(stem["opener"])+1)])
-    range_close = collect([(minimum(stem["closer"])) : (maximum(stem["closer"])+1)])
+    #println("for $stem in $list_stems")
+    range_open  = collect([ (minimum(stem["opener"])) : (maximum(stem["opener"])) ])
+    range_close = collect([ (minimum(stem["closer"])) : (maximum(stem["closer"])) ])
     range_occupied = vcat(range_occupied, range_open, range_close)
-
+    
+    #println("range_open = $range_open")
+    #println("range_close = $range_close")
+    #println("range_occupied = $range_occupied")
     temp_lvl1_open = ""
     temp_lvl1_close = ""
     last_opener = None
@@ -274,41 +275,38 @@ function RNAShape(structure::String)
       last_closer = stem["open_dict"][opener]
     end
     
-    
-    dict_lvl1[minimum(stem["opener"])] = {"elem" => temp_lvl1_open,  "lvl5" => "["}
-    dict_lvl1[minimum(stem["closer"])] = {"elem" => temp_lvl1_close, "lvl5" => "]"}
+    dict_lvl1[ minimum(stem["opener"]) ] = {"elem" => temp_lvl1_open,  "lvl5" => "["}
+    dict_lvl1[ minimum(stem["closer"]) ] = {"elem" => temp_lvl1_close, "lvl5" => "]"}
   end
   
   # assemble level1
   level1 = ""
   level5 = ""
+  #println("dict lv1 = $dict_lvl1")
   for i= 1:length(structure)
   
-    if i in dict_lvl1
+    if i in keys(dict_lvl1)
       level1 = add(level1, dict_lvl1[i]["elem"])
       level5 = add(level5, dict_lvl1[i]["lvl5"])
     end
     
-    if structure[i] == "." && (! endswith(level1, "_")) && (!(i in range_occupied))
+    if structure[i] == '.' && (! endswith(level1, "_")) && (!(i in range_occupied))
       level1 = add(level1, "_")
     end
     
   end
+  #println("lv 1 = $level1")
   level1 = replace(level1, "[_]", "[]")
-  level1 = replace(level1, " ", "")  
-  #level1 = level1.strip().replace("[_]", "[]").replace(" ", "")
-
+  level1 = replace(level1, " ", "")
   level3 = replace(level1, "_", "")
-  #level3 = level1.replace("_", "")
-
+  
+  #particular edge case
+  if(level5 == "")
+    level5 = "_"
+    level3 = "_"
+  end
   return {level5, level3, level1}
 end
-
-
-
-
-
-
 
 
 
@@ -434,6 +432,7 @@ end
 
 function test_randomDotBracket(n::Int)
   #unit test
+  @assert n > 0
   for i = 1:n
     @test testDotBracket(randomDotBracket())==true
   end
@@ -441,11 +440,29 @@ function test_randomDotBracket(n::Int)
 end
 
 
+function test_RNAshapes(n::Int)
+  #use only on computers where RNAshapes is installed
+  @assert n > 0
+  for i = 1:n
+    dotB = randomDotBracket()
+    t5 = chomp(readall(`RNAshapes -D $dotB -t5`))
+    t3 = chomp(readall(`RNAshapes -D $dotB -t3`))
+    t1 = chomp(readall(`RNAshapes -D $dotB -t1`))
+    result = RNAshapes(dotB)
+    @test t5 == result[1]
+    @test t3 == result[2]
+    @test t1 == result[3]
+  end
+  return true
+end
+
 function test_all()
   test_randomDotBracket(10000)
   test_compareBPSet()
+  
   return true
 end
+
 
 
 
