@@ -1,15 +1,16 @@
-#module RNA_2D
+module RNA_2D
 #-------------------------DEFINITION-------------------------
 #RNA 2D module is used to compare secondary structures
 #It contains type representation, methods to convert representation,
 #compare different structures (some restricted to structures of same length).
 
 #-------------------------imports-------------------------
-using Base.Test
+
 
 
 #-------------------------exported methods-------------------------
-#export 
+export structure, testDotBracket, dotBracketToMountain, dotBracketToBPSet,
+compareMountainDistance, fastCompareBPSet, compareHausdorff, RNAshapes
 
 
 
@@ -19,14 +20,23 @@ immutable structure
   dotBracket::String
   mountain::Vector{Int}
   base_pair_set::Vector{(Int,Int)}
+  energy::FloatingPoint
   
   function structure(family::Int, dotBracketInput::String)
-    @test testDotBracket(dotBracketInput) 
+    @assert testDotBracket(dotBracketInput) 
     mountain = dotBracketToMountain(dotBracketInput)
     base_pair_set = dotBracketToBPSet(dotBracketInput)
-    self = new(family, dotBracketInput, mountain, base_pair_set)
+    self = new(family, dotBracketInput, mountain, base_pair_set, -Inf)
   end
+  
+  function structure(family::Int, dotBracketInput::String, energy::FloatingPoint)
+    @assert testDotBracket(dotBracketInput) 
+    mountain = dotBracketToMountain(dotBracketInput)
+    base_pair_set = dotBracketToBPSet(dotBracketInput)
+    self = new(family, dotBracketInput, mountain, base_pair_set, energy)
+  end    
 end
+
 
 
 #-------------------------verification methods-------------------------
@@ -62,6 +72,7 @@ function testDotBracket(dotBracket::String)
 end
 
 
+
 #-------------------------transformation methods-------------------------
 function dotBracketToMountain(dotBracket::String)
   #transforms Vienna dotbracket to mountain representation
@@ -82,6 +93,8 @@ function dotBracketToMountain(dotBracket::String)
   return val
 end
 
+
+
 function dotBracketToBPSet(dotBracket::String)
   #transforms Vienna dotbracket to base pair set (sorted list by first base of the pair)
   # "((..))" -> [(1,6), (2,5)]
@@ -101,7 +114,6 @@ end
 
 
 
-
 #-------------------------comparison methods-------------------------
 function compareMountainDistance(m1::Vector{Int}, m2::Vector{Int})
   #lp1 mountain distance on two mountains representation of same length
@@ -112,7 +124,8 @@ function compareMountainDistance(m1::Vector{Int}, m2::Vector{Int})
 end
 
 
-function fastCompareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
+
+function compareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   #THIS ONE STILL NEEDS DEBUGGING AND FURTHER TESTING
   #naive base pair distance (cardinality of symmetric difference, |(A\B)U(B\A)|)
   #
@@ -120,7 +133,7 @@ function fastCompareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   id1 = 1
   id2 = 1
   result = 0
-  while i < minimum(bp1[end][1], bp2[end][1])
+  while i < min(bp1[end][1], bp2[end][1])
     res = Int[]
     #add the 2nd of tuple if first is equal to index
     #println(bp1[id1])
@@ -160,6 +173,7 @@ function fastCompareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
 end
 
 
+
 function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   function distanceBP(a::(Int, Int), b::(Int, Int))
     return maximum((abs(a[1]-b[1])), abs(a[2]-b[2]))
@@ -173,6 +187,7 @@ function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   hausdorffRightToLeft = minimum(map(x->distanceBPtoSet(x,bp1), bp2))
   return maximum(hausdorffLefttoRight, hausdorffRightToLeft)
 end
+
 
 
 function RNAShape_fetchStems(structure::String)
@@ -226,7 +241,6 @@ function RNAShape_fetchStems(structure::String)
   end
   return list_stems
 end
-
 
 
 
@@ -310,167 +324,5 @@ end
 
 
 
-
-
-
-
-#-------------------------unit test methods-------------------------
-function test_testDotBracket()
-  #unit test
-  @test testDotBracket("((((.)))") == false #missing brackets on the right
-  @test testDotBracket("(((.))))") == false #missing brackets on the left
-  @test testDotBracket("(((())))") == false
-end
-
-
-function slowCompareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
-  #helper method
-  #O(n^2) used for debugging
-  bp12 =(Int, Int)[]
-  bp21 =(Int, Int)[]
-  for i in bp1
-    if !(i in bp2)
-    push!(bp12, i)
-    end
-  end
-  for i in bp2
-    if !(i in bp1)
-    push!(bp21, i)
-    end
-  end
-  return length(bp12) + length(bp21)
-end
-
-
-function test_compareBPSet()
-  #unit test
-  a = dotBracketToBPSet("(((((....)))))")
-  b = dotBracketToBPSet("(((....)(((....))(..))))")
-  @test slowCompareBPSet(a,b) == 12 == fastCompareBPSet(a,b)
-
-  c = a
-  @test slowCompareBPSet(a,c) == 0 == fastCompareBPSet(a,c)
-  
-  d = slowCompareBPSet("(((....)(((....))(.)(..))))")
-  return true
-end
-
-
-function randomDotBracket()
-  #helper method
-  #generate random valid dot bracket
-  #choice of three moves
-  # 1- (
-  # 2- )
-  # 3- .
-  opening = ['(', '.', '.']
-  closing = [')', '(', '.','.']
-  function addSymbol(choices, values, stack)
-    sym = choices[rand(1:length(choices))]
-    if sym == '('
-      push!(values, sym)
-      return stack + 1
-      
-    elseif sym == ')' && stack != 0
-      push!(values, sym)
-      return stack -1
-      
-    elseif sym == '.'
-      push!(values, sym)
-    
-    else return -1
-    end
-    
-    return stack
-  end
-  
-  partialAddSymbol = s->addSymbol(s, val, stack)
-  
-  stack = 0
-  val = Char[]
-  stack = partialAddSymbol(opening)
-  
-  while true && length(val) < 40
-    #println(stack)
-    #println(CharString(val))
-    if val[end] == '('
-      stack = partialAddSymbol(opening)
-      
-    else #symbol is either ')' or '.'
-      stack = partialAddSymbol(closing)
-      
-      if stack == -1
-	return CharString(val)
-      end
-    end
-  end
-    
-  #just to avoid the problem of ()
-  push!(val, '.')
-  while stack > 0
-    push!(val, ')')
-    stack -= 1
-  end
-  return CharString(val)
-end
-
-
-
-function randomDotBracketPlus()
-  
-  x = randomDotBracket()
-  while true
-    for i in x
-      if i !='.'
-	return x
-      end
-    end
-    x = randomDotBracket()
-  end
-end
-
-
-function test_randomDotBracket(n::Int)
-  #unit test
-  @assert n > 0
-  for i = 1:n
-    @test testDotBracket(randomDotBracket())==true
-  end
-  return true
-end
-
-
-function test_RNAshapes(n::Int)
-  #use only on computers where RNAshapes is installed
-  @assert n > 0
-  for i = 1:n
-    dotB = randomDotBracket()
-    t5 = chomp(readall(`RNAshapes -D $dotB -t5`))
-    t3 = chomp(readall(`RNAshapes -D $dotB -t3`))
-    t1 = chomp(readall(`RNAshapes -D $dotB -t1`))
-    result = RNAshapes(dotB)
-    @test t5 == result[1]
-    @test t3 == result[2]
-    @test t1 == result[3]
-  end
-  return true
-end
-
-function test_all()
-  test_randomDotBracket(10000)
-  test_compareBPSet()
-  
-  return true
-end
-
-
-
-
-#-------------------------export all the methods!-------------------------
-
-#export compareMountainDistance, fastCompareBPSet
-
-
-
 #--module end
-#end
+end
