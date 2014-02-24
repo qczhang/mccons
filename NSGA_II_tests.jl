@@ -3,7 +3,22 @@
 require("NSGA_II")
 using Base.Test
 
+#BEGIN test_all
+function test_all()
+  #exhaustive
+  test_nonDominatedCompare(1000,3)
+  test_evaluateAgainstOthers(1000,5)
+  test_fastDelete(2000,2000)
+  test_nonDominatedSort(2000, 5)
+  
+  #non exhaustive
+  return true
+end
+#END test_all
 
+
+
+#BEGIN test_nonDominatedCompare
 function test_nonDominatedCompare(n::Int, fitnessSize::Int)
   #exhaustive unit test
   tests = {}
@@ -31,12 +46,20 @@ function test_nonDominatedCompare(n::Int, fitnessSize::Int)
   end
   return true
 end
+#END test_nonDominatedCompare
 
+
+
+#BEGIN randomFitnessArray
 function randomFitnessArray(fitnessLen::Int)
   #helper
   return map(abs, rand(Int16, fitnessLen))
 end
+#END randomFitnessArray
 
+
+
+#BEGIN test_nonDominatedSort
 function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #unit test
   #exhaustive
@@ -71,8 +94,11 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
     
   return true
 end
-  
-  
+#END test_nonDominatedSort
+
+
+
+#BEGIN test_evaluateAgainstOthers
 function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_method = nonDominatedCompare)
   #exhaustive unit test
   #generate the population
@@ -96,17 +122,29 @@ function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_m
   
   return true
 end
+#END test_evaluateAgainstOthers
 
+
+
+#BEGIN slowDelete
 function slowDelete(values::Vector, deletion::Vector)
   #helper
   return filter(x->!(x in deletion), values)
 end 
+#END slowDelete
 
+
+
+#BEGIN generatePosRandInt
 function generatePosRandInt(n::Int)
   #helper
   return filter(x->x>0, unique(sort(rand(Int16, n))))
 end
+#END generatePosRandInt
 
+
+
+#BEGIN test_fastDelete
 function test_fastDelete(repet::Int, size::Int)
   #unit test, exhaustive
   for i= 1:repet
@@ -116,28 +154,6 @@ function test_fastDelete(repet::Int, size::Int)
   end
   return true
 end
-
-
-
-
-
-
-
-
-
-  
-  
-function test_all()
-  #exhaustive
-  test_nonDominatedCompare(1000,3)
-  test_evaluateAgainstOthers(1000,5)
-  test_fastDelete(2000,2000)
-  test_nonDominatedSort(2000, 5)
-  
-  
-  
-  #non exhaustive
-  return true
-end
+#END test_fastDelete
 
 
