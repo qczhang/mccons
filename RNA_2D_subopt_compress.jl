@@ -52,10 +52,41 @@ function abstractShape_energy_Partition(suboptList::Vector)
 end
 #END abstractShape_energy_Partition
 
-
-
-
-
+function rouletteWheelSel(l::Vector, proportion::FloatingPoint)
+  @assert 0 <= proportion <= 1
+  #its granular, not much to do about it
+  n = ceil(length(l)*proportion)
+  
+  #assign boltzmann probability
+  l2 = map(x->(x[1], boltzmann(x[2])), l)
+  
+  #get probability sum
+  Qs = reduce(+, map(x->x[2], l2))
+  
+  #initialize
+  result = (String, FloatingPoint)[]
+  i = 0 
+  while i < n
+    #target is between 0 and Qs
+    r = rand()
+    target = r * Qs
+    @assert 0<=target<=Qs
+#     println("rand = $r")
+#     println("target = $target")
+    index = 1
+    cumul = BigFloat(0)
+    
+    while (cumul + (l2[index][2])) < target
+      cumul += l2[index][2]
+      index+=1
+    end
+    
+    push!(result, l[index])
+    i+=1
+  end
+  
+  return result
+end
 
 
 #BEGIN stochasticUniversalSampling
@@ -76,7 +107,7 @@ function stochasticUniversalSampling(suboptListOriginal::Vector, proportion::Flo
   Qs = reduce(+, map(x->x[2], suboptList))
   
   #sort by reverse order of Boltzmann energy (state energy)
-  sort!(suboptList, by = x->x[2], rev = true)
+  #sort!(suboptList, by = x->x[2], rev = true)
   
   #acquire the step size
   step = BigFloat(Qs / n)
@@ -186,7 +217,7 @@ function test2()
   data = getObject("test_compression/test_compress_tRNA-GLY_10k")
   
 end
-
+  
 #BEGIN testCompressionPerformance
 function testCompressionPerformance(initialsuboptList::Vector, proportion::FloatingPoint)
 
@@ -197,8 +228,8 @@ function testCompressionPerformance(initialsuboptList::Vector, proportion::Float
   p1 = abstractShape_energy_Partition(initialsuboptList)
   p2 = abstractShape_energy_Partition(finalsuboptList)
   
-  println("keys of initial = $(collect(keys(p1[1])))")
-  println("keys of final = $(collect(keys(p2[1])))")
+#   println("keys of initial = $(collect(keys(p1[1])))")
+#   println("keys of final = $(collect(keys(p2[1])))")
   #initialize the result dict
   result = Dict{String, (BigFloat, BigFloat)}()
   
@@ -217,8 +248,15 @@ function testCompressionPerformance(initialsuboptList::Vector, proportion::Float
   for i in keys(p1[1])
     result[i] = ((p1[1][i])/s1, (p2[1][i])/s2)
   end
-  \todo debug la somme semble pas etre a 100............
-  return result
+  #\todo debug la somme semble pas etre a 100............
+  
+  #get the dicts to arrays
+  ar = (String, BigFloat, BigFloat)[]
+  for i in keys(result)
+    push!(ar, (i, result[i][1], result[i][2]))
+  end
+  sort!(ar, by = x->x[2], rev = true)
+  return ar
 end
   
 #   
@@ -257,5 +295,10 @@ end
 
 
 #
-
+data = getObject("test_compression/test_compress_tRNA-GLY_10k")
+# data = map(x->(x[1], boltzmann(x[2])), data)
+# 
+# d1= rouletteWheelSel(data, 0.01)
+# s0 = sum(map(x->x[2], data))
+# s1 = sum(map(x->x[2], d1))
 #END tests
