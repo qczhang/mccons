@@ -19,6 +19,9 @@ function boltzmann(energy::FloatingPoint, T = 295)
 end
 #END boltzmann
 
+
+
+#BEGIN callFlashFold
 function callFlashFold(sequence::String, ft::Int)
   data = split(readall(`./f32 -seq $sequence -ft $ft`), "\n")
   if(data[end] == "")
@@ -28,10 +31,70 @@ function callFlashFold(sequence::String, ft::Int)
   data = map(x->(x[1], float(x[2])), data)
   return data
 end
+#END callFlashFold
 
 
 
-function comparePartitions(p1, p2)
+#BEGIN test_comparePartitions
+function test_comparePartitions(proportion::FloatingPoint)
+  @assert 0<= proportion <= 1
+  a = getObject("test_compression/test_compress_tRNA-GLY_10k")
+  b = suboptCompress(a, proportion)
+  
+  #get all the info from the partitions
+  partition1 = abstractShape_energy_Partition(a)
+  partition2 = abstractShape_energy_Partition(b)
+  
+  #look at level5 first (arbitrary)
+  p1 = partition1[1]
+  p2 = partition2[1]
+  
+  compared = comparePartitions(p1,p2)
+  l5_1 = partition1[4]
+  l5_2 = partition2[4]
+  
+  cardinalities = Dict{String, (Int, Int)}()
+  for i in keys(compared)
+    cardinalities[i] = (length(get(l5_1, i, [])), length(get(l5_2, i, [])))
+  end
+  
+  result = {}
+  for i in keys(compared)
+    push!(result, (compared[i], cardinalities[i][1], cardinalities[i][2]))
+  end
+  sort!(result, by=x->x[1], rev=true)
+  
+  return result
+end
+#END test_comparePartitions
+
+
+
+#BEGIN comparePartitions
+function comparePartitions(partition1, partition2)
+  #look at level5 first (arbitrary)
+  #the input is directly from abstractShape_energy_Partition
+  @assert length(p1)==length(p2)==6
+  
+  #get the energies per abstract shape
+  p1 = partition1[1]
+  p2 = partition2[1]
+  
+  #get the shape=>suboptimals to evaluate the number of structures per abstract shape
+  l5_1 = partition1[4]
+  l5_2 = partition2[4]
+  
+  #
+  cardinalities = Dict{String, (Int, Int)}()
+  for i in keys(compared)
+    cardinalities[i] = (length(get(l5_1, i, [])), length(get(l5_2, i, [])))
+  end
+  
+  result = {}
+  for i in keys(compared)
+    push!(result, (compared[i], cardinalities[i][1], cardinalities[i][2]))
+  end
+  sort!(result, by=x->x[1], rev=true)
   #
   Qs1 = BigFloat(0)
   Qs2 = BigFloat(0)
@@ -47,10 +110,10 @@ function comparePartitions(p1, p2)
   
   #divide the values
   for i in keys(p1)
-    p1[i] /= Qs
+    p1[i] /= Qs1
   end
   for i in keys(p2)
-    p2[i] /= Qs
+    p2[i] /= Qs2
   end
   
   #assign the absolute difference of probability
@@ -65,9 +128,11 @@ function comparePartitions(p1, p2)
   end
   return result
 end
+#END comparePartitions
 
 
 
+#BEGIN fixedPointFlashFold
 function fixedPointFlashFold(structure::String,initialFT::Int, maxFT::Int, incrementSize::Int, epsilon::FloatingPoint)
   #run flashfold until there is a fixed point reached in the output
   #using a small increment will automatically stop it (will create so little change)
@@ -75,11 +140,15 @@ function fixedPointFlashFold(structure::String,initialFT::Int, maxFT::Int, incre
   dataBefore = abstractShape_energy_Partition(callFlashFold(structure, initialFT))
   while initialFT < maxFT
     #fetch the next suboptimals and calculate their partition
-    dataAfter = abstractShape_energy_Partition(callFlashFold(structure, initialFT+incrementSize))
+    initialFT += incrementSize
+    dataAfter = abstractShape_energy_Partition(callFlashFold(structure, initialFT))
+    #compare the previous and the actual
    
   end
 end
-  
+#END fixedPointFlashFold
+
+
 
 #BEGIN abstractShape_energy_Partition
 function abstractShape_energy_Partition(suboptList::Vector)
@@ -112,6 +181,9 @@ function abstractShape_energy_Partition(suboptList::Vector)
 end
 #END abstractShape_energy_Partition
 
+
+
+#BEGIN rouletteWheelSel
 function rouletteWheelSel(l::Vector, proportion::FloatingPoint)
   @assert 0 <= proportion <= 1
   #its granular, not much to do about it
@@ -147,6 +219,8 @@ function rouletteWheelSel(l::Vector, proportion::FloatingPoint)
   
   return result
 end
+#END rouletteWheelSel
+
 
 
 #BEGIN stochasticUniversalSampling
@@ -244,6 +318,9 @@ end
 
 #BEGIN tests
 
+
+
+#BEGIN getObject
 function getObject(name::String)
   #open
   f = open(name, "r")
@@ -259,24 +336,27 @@ function getObject(name::String)
   data = map(x->(x[1], float(x[2])), data)
   return data
 end
+#END getObject
 
 
-#I manually created some supboptimal lists to test the scripts
 
+#BEGIN test1
 function test1()
   #first test on tRNA-ASN
   data = getObject("/tests_compression/test_compress_tRNA-ASN")
-  
-  
-  
-  
 end
+#END test1
 
 
+
+#BEGIN test2
 function test2()
   data = getObject("test_compression/test_compress_tRNA-GLY_10k")
   
 end
+#END test2
+ 
+ 
   
 #BEGIN testCompressionPerformance
 function testCompressionPerformance(initialsuboptList::Vector, proportion::FloatingPoint)
@@ -338,33 +418,4 @@ end
 
 
 
-
-# function openObject(typ::ASCIIString, size::ASCIIString)
-#   f = open("$typ.$size.object", "r")
-#   data = deserialize(f)
-#   close(f)
-#   return data
-# end
-#   
-# function storeObject(typ::ASCIIString, size::ASCIIString, object)
-#   f = open("$typ.$size.object", "w")
-#   serialize(f, object)
-#   close(f)
-#   return true
-# end
-
-function test1()
-  data = getObject("test_compression/test_compress_tRNA-GLY_10k")
-  r = testCompressionPerformance(data)
-  
-  return data
-end
-
-#
-
-# data = map(x->(x[1], boltzmann(x[2])), data)
-# 
-# d1= rouletteWheelSel(data, 0.01)
-# s0 = sum(map(x->x[2], data))
-# s1 = sum(map(x->x[2], d1))
 #END tests
