@@ -1,4 +1,6 @@
 *.aux
 *.log
 *.pdf
-t/
+f32
+src/
+tables/
