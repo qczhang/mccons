@@ -19,7 +19,67 @@ function boltzmann(energy::FloatingPoint, T = 295)
 end
 #END boltzmann
 
+function callFlashFold(sequence::String, ft::Int)
+  data = split(readall(`./f32 -seq $sequence -ft $ft`), "\n")
+  if(data[end] == "")
+    data = data[1:end-1]
+  end
+  data = map(x->split(x), data)
+  data = map(x->(x[1], float(x[2])), data)
+  return data
+end
 
+
+
+function comparePartitions(p1, p2)
+  #
+  Qs1 = BigFloat(0)
+  Qs2 = BigFloat(0)
+  
+  #get the Qs for both of them
+  for i in keys(p1)
+    Qs1 += p1[i] 
+  end
+  
+  for i in keys(p2)
+    Qs2 += p2[i]
+  end
+  
+  #divide the values
+  for i in keys(p1)
+    p1[i] /= Qs
+  end
+  for i in keys(p2)
+    p2[i] /= Qs
+  end
+  
+  #assign the absolute difference of probability
+  #do not assume that they have the all the same keys
+  result = Dict{String, BigFloat}()
+  for i in keys(p1)
+    result[i] = p1[i]
+  end
+  
+  for i in keys(p2)
+    result[i] = abs(get(result, i, BigFloat(0)) - p2[i])
+  end
+  return result
+end
+
+
+
+function fixedPointFlashFold(structure::String,initialFT::Int, maxFT::Int, incrementSize::Int, epsilon::FloatingPoint)
+  #run flashfold until there is a fixed point reached in the output
+  #using a small increment will automatically stop it (will create so little change)
+  #will only run if f32 in the path...
+  dataBefore = abstractShape_energy_Partition(callFlashFold(structure, initialFT))
+  while initialFT < maxFT
+    #fetch the next suboptimals and calculate their partition
+    dataAfter = abstractShape_energy_Partition(callFlashFold(structure, initialFT+incrementSize))
+   
+  end
+end
+  
 
 #BEGIN abstractShape_energy_Partition
 function abstractShape_energy_Partition(suboptList::Vector)
@@ -293,9 +353,15 @@ end
 #   return true
 # end
 
+function test1()
+  data = getObject("test_compression/test_compress_tRNA-GLY_10k")
+  r = testCompressionPerformance(data)
+  
+  return data
+end
 
 #
-data = getObject("test_compression/test_compress_tRNA-GLY_10k")
+
 # data = map(x->(x[1], boltzmann(x[2])), data)
 # 
 # d1= rouletteWheelSel(data, 0.01)
