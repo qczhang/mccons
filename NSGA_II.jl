@@ -31,6 +31,15 @@ type population
   solutions::Vector{solution}
   # {fitness => (Front, CrowdingDistance)}
   distances::Dict{Vector, (Int, FloatingPoint)}
+  
+  function population(solutions::Vector{solution})
+    d = Dict{Vector, (Int, FloatingPoint)}()
+    self = new(solutions, d)
+  end
+  
+  function population(solutions::Vector{solution}, distances::Dict{Vector, (Int, FloatingPoint)})
+    self = new(solutions, distances)
+  end
 end
 
 #Hall of Fame is a special population
@@ -124,7 +133,7 @@ function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}
   front = map(x->x.fitness, wholePopulation.solutions[frontIndices])
   
   #step 2
-  #create a dict {fitness => crowdingDistance}
+  #create a dict {fitness => crowdingDistance} and initialize @ 0
   fitnessToCrowding = Dict{Vector, (Int, FloatingPoint)}()
   for i in front
     fitnessToCrowding[i] = (frontID, 0.0)
@@ -140,26 +149,44 @@ function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}
   #step 4
   #reverse sort all the unique fitness vectors per each objective value
   sorts = {} #todo: static type this one
-  for i = 1:vectorSize
-    push!(sorts, sort(fitKeys, by = x->x[i]), rev = true)
+  for i = 1:fitnessVectorSize
+    push!(sorts, sort(fitKeys, by = x->x[i], rev = true))
   end
+#   println("sorts")
+#   for i in sorts
+#   println(i)
+#   println("end")
+#   end
   
   #step 5
   #get the max, min and range of each objective
-  maxFitnesses = map(x->x[1],   sorts)
-  minFitnesses = map(x->x[end], sorts)
-  rangeSize = map(x->x[1]-x[2], zip(maxFitnesses, minFitnesses))
+  maxFitnesses = {}
+  minFitnesses = {}
+  for i = 1:length(sorts)
+    push!(maxFitnesses, sorts[i][1][i] )
+    push!(minFitnesses, sorts[i][end][i])
+  end
+  rangeSize = map(x->(x[1]-x[2]), zip(maxFitnesses, minFitnesses))
+
   
   #step 6
   #assign infinite crowding distance to maximum and minimum fitness vectors for each objective 
-  map(x->fitnessToCrowding[x[end]] = (frontId, Inf), sorts)
-  map(x->fitnessToCrowding[x[1]]   = (frontId, Inf), sorts)
+  map(x->fitnessToCrowding[x[end]] = (frontID, Inf), sorts)
+  map(x->fitnessToCrowding[x[1]]   = (frontID, Inf), sorts)
   
+ 
   #step 7
   #assign crowding distances to the other fitness vectors for each objectives
+#   println(fitnessToCrowding)
   for i = 1:fitnessVectorSize
     for j = 2:(numUniqueFitness-1)
-      fitnessToCrowding[sorts[i][j]] = (frontID, (fitnessToCrowding[sorts[i][j]][2] + (((sorts[i][j-1] - sorts[i][j+1]))/rangeSize[i])))
+#       println("previous = $(fitnessToCrowding[sorts[i][j]][2])")
+#       println("bigger  = $(sorts[i][j-1][i])")
+#       println("smaller = $(sorts[i][j+1][i])")
+      value = (fitnessToCrowding[sorts[i][j]][2] + (((sorts[i][j-1][i] - sorts[i][j+1][i]))/rangeSize[i]))
+#       println("value = $value\n")
+      fitnessToCrowding[sorts[i][j]] = (frontID, (fitnessToCrowding[sorts[i][j]][2] + (((sorts[i][j-1][i] - sorts[i][j+1][i]))/rangeSize[i])))
+#       println("")
     end
   end
   

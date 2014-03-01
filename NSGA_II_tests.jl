@@ -166,6 +166,50 @@ function test_fastDelete(repet::Int, size::Int)
 end
 #END test_fastDelete
 
+
+
+#BEGIN generatePop
+function generatePop(size::Int, fitnessLen::Int)
+  p = solution[]
+  for i = 1:size
+    push!(p, solution({}, randomFitnessArray(fitnessLen)))
+  end
+  
+  return population(p)
+end
+#END
+
+
+
+#BEGIN test_crowdingDistance
+function test_crowdingDistance()
+  #create population
+  p = solution[]
+  push!(p, solution({}, [0,5]))
+  push!(p, solution({}, [0,5]))
+  push!(p, solution({}, [2,2]))
+  push!(p, solution({}, [3,1]))
+  push!(p, solution({}, [3,1]))
+  push!(p, solution({}, [3,1]))
+  push!(p, solution({}, [5,0]))
+  pop = population(p)
+  
+  #sort into fronts
+  fronts = nonDominatedSort(pop)
+  
+  #calculate crowding distances
+  crowdingDistance(pop, fronts[1], 1, true)
+  
+  #test against manually calculated values
+  @test pop.distances[[0,5]] == (1,Inf)
+  @test pop.distances[[2,2]] == (1,1.4)
+  @test pop.distances[[3,1]] == (1,1.0)
+  @test pop.distances[[5,0]] == (1,Inf)
+  
+end
+#END
+
+
 #BEGIN test_all
 function test_all()
   #exhaustive
@@ -173,6 +217,7 @@ function test_all()
   test_evaluateAgainstOthers(1000,5)
   test_fastDelete(2000,2000)
   test_nonDominatedSort(2000, 5)
+  test_crowdingDistance()
   println("All unit tests succeeded")
   
   return true
