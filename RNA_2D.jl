@@ -1,20 +1,32 @@
 module RNA_2D
-#-------------------------DEFINITION-------------------------
-#RNA 2D module is used to compare secondary structures
-#It contains type representation, methods to convert representation,
-#compare different structures (some restricted to structures of same length).
 
-#-------------------------imports-------------------------
+#BEGIN readme
+
+# -structure type definition
+# -structure validation (Vienna dot bracket), no "()"
+# -conversion between representations (dot bracket, mountain, base pair set)
+# -distance functions (mountain, base pair set symmetric difference, hausdorff)
+# -RNAshapes 
+
+#END readme
 
 
 
-#-------------------------exported methods-------------------------
+#BEGIN imports
+
+
+#END imports
+
+
+
+#BEGIN exported methods
 export structure, testDotBracket, dotBracketToMountain, dotBracketToBPSet,
 compareMountainDistance, fastCompareBPSet, compareHausdorff, RNAshapes
+#END 
 
 
 
-#-------------------------type definition-------------------------
+#BEGIN type definition
 immutable structure
   family::Int #needed in mccons
   dotBracket::String
@@ -36,13 +48,13 @@ immutable structure
     self = new(family, dotBracketInput, mountain, base_pair_set, energy)
   end    
 end
+#END
 
 
 
-#-------------------------verification methods-------------------------
+#BEGIN verification methods
 function testDotBracket(dotBracket::String)
   #verifies Vienna dot-bracket for "()" and unbalanced structure
-  #could be done with regex... to investigate
   counter = 0
   lastchar = '('
   for i in dotBracket
@@ -70,25 +82,23 @@ function testDotBracket(dotBracket::String)
   end
   return true
 end
+#END
 
 
 
-#-------------------------transformation methods-------------------------
+#BEGIN conversion methods
 function dotBracketToMountain(dotBracket::String)
   #transforms Vienna dotbracket to mountain representation
   #e.g. "(.)" -> [0,1,1,0]
   counter = 0
-  lastchar = '('
-  val::Vector{Int} = [0]
+  val = Int[0]
   for i in dotBracket
-    #add to structure
     if(i=='(')
-      counter+=1
+      counter += 1
     elseif(i==')')
-      counter-=1
+      counter -= 1
     end
-    append!(val, [counter])
-    lastchar=i
+    push!(val, counter)
   end
   return val
 end
@@ -111,10 +121,11 @@ function dotBracketToBPSet(dotBracket::String)
   end
   return sort(bpset)
 end
+#END
 
 
 
-#-------------------------comparison methods-------------------------
+#BEGIN comparison methods
 function compareMountainDistance(m1::Vector{Int}, m2::Vector{Int})
   #lp1 mountain distance on two mountains representation of same length
   #e.g. [1,2,2,2,1], [1,2,3,2,1] = 1
@@ -126,9 +137,7 @@ end
 
 
 function compareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
-  #THIS ONE STILL NEEDS DEBUGGING AND FURTHER TESTING
   #naive base pair distance (cardinality of symmetric difference, |(A\B)U(B\A)|)
-  #
   i = 0
   id1 = 1
   id2 = 1
@@ -187,9 +196,11 @@ function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   hausdorffRightToLeft = minimum(map(x->distanceBPtoSet(x,bp1), bp2))
   return maximum(hausdorffLefttoRight, hausdorffRightToLeft)
 end
+#END
 
 
 
+#BEGIN RNAshapes
 function RNAShape_fetchStems(structure::String)
   #assert given structure is adequate
   @assert testDotBracket(structure) == true
@@ -241,7 +252,6 @@ function RNAShape_fetchStems(structure::String)
   end
   return list_stems
 end
-
 
 
 function RNAshapes(structure::String)
@@ -321,8 +331,8 @@ function RNAshapes(structure::String)
   end
   return {level5, level3, level1}
 end
+#END
 
 
 
-#--module end
 end

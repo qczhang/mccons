@@ -1,19 +1,19 @@
-#RNA_2D tests
-#test methods for RNA_2D module
 
+
+#BEGIN readme
+#unit tests for the RNA_2D module
+#END readme
+
+
+
+#BEGIN imports
 require("RNA_2D.jl")
 using Base.Test
-
-#-------------------------unit test methods-------------------------
-function test_all()
-  test_testDotBracket()
-  test_randomDotBracket(10000)
-  test_compareBPSet(1000)
-  return true
-end
+#END
 
 
 
+#BEGIN unit tests
 function test_testDotBracket()
   #unit test
   @test RNA_2D.testDotBracket("((((.)))") == false #missing brackets on the right
@@ -118,6 +118,7 @@ end
 
 
 function randomDotBracketPlus()
+  #generate non empty dotbrackets (ie. not "." or ".."...)
   x = randomDotBracket()
   while true
     for i in x
@@ -157,5 +158,22 @@ function test_RNAshapes(n::Int)
   end
   return true
 end
+
+
+
+function test_all()
+  test_testDotBracket()
+  test_randomDotBracket(10000)
+  test_compareBPSet(1000)
+  println("All unit tests succeeded")
+  return true
+end
+#END
+
+
+
+test_all()
+
+
 
 

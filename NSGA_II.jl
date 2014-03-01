@@ -1,63 +1,68 @@
-#module NSGA_II
-#-------------------------DEFINITION-------------------------
+
+
+#BEGIN readme
 #Simple implementation of the NSGA-II multiobjective
 #genetic algorithm.
-
-#-------------------------imports-------------------------
-
-
-
-#-------------------------exported methods-------------------------
-#export
+#END
 
 
 
-#-------------------------type definitions-------------------------
+#BEGIN imports
+
+#END
+
+
+
+#BEGIN exports
+
+#END
+
+
+
+#BEGIN type definitions
+
 immutable solution
   units::Vector
   fitness::Vector
 end
 
 
-#every fitness has an associated crowding distance too
-#the key is not the individual but its fitness
-#	-same fitness implies same front
-#	-same fitness implies same crowding (but is treated correctly in the last front selection)
-
-#\todo: add an assertion that solutions must have the same size and type of fitness vector 
 type population
   solutions::Vector{solution}
-  distances::Dict{Vector, (Int, FloatingPoint)} #distances[fitness] = (Front, CrowdingDistance)
+  # {fitness => (Front, CrowdingDistance)}
+  distances::Dict{Vector, (Int, FloatingPoint)}
 end
 
-
-
+#Hall of Fame is a special population
 typealias hallOfFame population
 
+#END
 
 
-#-------------------------genetic algorithm methods-------------------------
-function nonDominatedSort(pop::population) 
-  #multi-objective optimization using evolutionnary algorithms p.43
+
+#BEGIN genetic algorithm main methods
+
+
+#BEGIN nonDominatedSort
+function nonDominatedSort(pop::population)
   #input: 2N population
   #output: at least N solutions, the output likely has one front too much
   
-  #get cutoff
+  #get number of solutions to keep
   len = length(pop.solutions)
-  cutoff = div(len, 2) + len%2
-  
-  #step 1
-  #evaluate the whole population
+  cutoff = ceil(len/2)
+
+  #get domination count and identity of dominators
   values = (Int, Int, Array{Int,1})[]
   for i = 1:len
     push!(values, evaluateAgainstOthers(pop, i, nonDominatedCompare))
   end
   
-  #step 2 
+  fronts = Vector{Int}[]
+  
   #nondominated sort
-  fronts = Array{Int,1}[]
   while length(values) > cutoff
-    #find the "dominators"
+    #find the dominators
     front = filter(x->x[2] == 0, values)
     frontIndices = map(x->x[1], front)
     push!(fronts, frontIndices)
@@ -74,11 +79,14 @@ function nonDominatedSort(pop::population)
       values[i] = (values[i][1], cardinality, substracted)
     end
   end
+  
   return fronts
 end
+#END 
 
 
 
+#BEGIN addToHallOfFame
 function addToHallOfFame(wholePopulation::population, firstFrontIndices::Vector{Int}, bestPop::hallOfFame)
   #get the first front from the whole population
   firstFront = wholePopulation.solutions[firstFrontIndices]
@@ -100,16 +108,17 @@ function addToHallOfFame(wholePopulation::population, firstFrontIndices::Vector{
   #get first front indices
   firstFrontIndices = map(x->x[1], firstFront)
   
-  #reassign the hall of fame
+  #substitute for new population in hall of fame
   bestPop.individuals = bestPop[firstFrontIndices]
 end
+#END
 
 
 
-
+#BEGIN crowdingDistance
 function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}, frontID::Int, update::Bool)
   #calculate and modify the crowding and front value in the whole population for a certain front
-  #don't use if on the last front, it doesn't make any sense
+  #don't use if on the last front
   #step 1
   #fetch the individual fitness from the front
   front = map(x->x.fitness, wholePopulation.solutions[frontIndices])
@@ -123,7 +132,7 @@ function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}
 
   fitKeys = collect(keys(fitnessToCrowding))
   
-  #step 3 
+  #step 3
   #do the crowding distance
   numUniqueFitness = length(fitKeys)
   fitnessVectorSize = length(fitKeys[1])
@@ -136,7 +145,7 @@ function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}
   end
   
   #step 5
-  #get the max and min of each objective
+  #get the max, min and range of each objective
   maxFitnesses = map(x->x[1],   sorts)
   minFitnesses = map(x->x[end], sorts)
   rangeSize = map(x->x[1]-x[2], zip(maxFitnesses, minFitnesses))
@@ -165,16 +174,17 @@ function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}
   #return
   return fitnessToCrowding
 end
+#END
 
 
 
-
+#BEGIN lastFrontSelection
 function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vector{Int}, lastFrontId::Int, k::Int)
   #select k solutions from the last front 
   
   #create mapping fitness => crowding
   fitnessToCrowding = crowdingDistance(wholePopulation, lastFrontIndices, -1, false)
-  
+  \todo TOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO DOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
   #create mapping fitness => lastFrontIndices index
   fitnessToIndex = Dict{Vector{Int}, Vector{Int}}()
   for i = 1:length(lastFrontIndices)
@@ -209,9 +219,11 @@ function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vecto
   
    return chosenOnes
 end
+#END
 
 
 
+#BEGIN sample
 function sample(L::Vector, k::Int)
   #take k elements from L without replacing
   L2 = copy(L)
@@ -223,9 +235,11 @@ function sample(L::Vector, k::Int)
   end
   return result
 end  
+#END
 
 
 
+#BEGIN UFTournSelection
 function UFTournSelection(L::population)
   #unique fitness based tournament selection
   N = length(L.solutions)
@@ -252,11 +266,15 @@ function UFTournSelection(L::population)
   
   
 end
+#END
 
 
+#END
  
 
-#-------------------------helper methods-------------------------
+#BEGIN helper methods
+
+#BEGIN nonDominatedCompare
 function nonDominatedCompare (a::Vector, b::Vector, comparator = >)
   # a > b --> 0: a==b, 1: a>b, -1: b>a, pairwise vector comparison
   #nonDominatedCompare([0, 0, 2], [0, 0, 1]) = 1
@@ -289,9 +307,9 @@ function nonDominatedCompare (a::Vector, b::Vector, comparator = >)
     return 0
   end
 end
+#END
 
-
-
+#BEGIN evaluateAgainstOthers
 function evaluateAgainstOthers(pop::population, index::Int, compare_method = nonDominatedCompare)
   #compare the object at index with the rest of the vector
   count = 0
@@ -318,9 +336,9 @@ function evaluateAgainstOthers(pop::population, index::Int, compare_method = non
   #output is sorted
   return (index, count, dominatedby)
 end
+#END
 
-
-
+#BEGIN fastDelete
 function fastDelete(values::Vector, deletion::Vector)
   #helper, inside non dominated sorting
   #both vectors are sorted, start in natural, start > 0, nonempty
@@ -339,11 +357,9 @@ function fastDelete(values::Vector, deletion::Vector)
   end
   return result
 end
+#END
+
+#END
 
 
 
-
-  
-  
-#--module end
-#end

@@ -1,20 +1,20 @@
-#Unit tests for the NSGA_II module
 
+
+#BEGIN readme
+#Unit tests for the NSGA_II module
+#END
+
+
+
+#BEGIN imports
 require("NSGA_II")
 using Base.Test
+#END
 
-#BEGIN test_all
-function test_all()
-  #exhaustive
-  test_nonDominatedCompare(1000,3)
-  test_evaluateAgainstOthers(1000,5)
-  test_fastDelete(2000,2000)
-  test_nonDominatedSort(2000, 5)
-  
-  #non exhaustive
-  return true
-end
-#END test_all
+
+
+#BEGIN unit tests
+
 
 
 
@@ -22,9 +22,12 @@ end
 function test_nonDominatedCompare(n::Int, fitnessSize::Int)
   #exhaustive unit test
   tests = {}
+  
+  #create vector of random fitness arrays
   for i =1:n
     push!(tests, randomFitnessArray(fitnessSize))
   end
+  
   function all_compare(x,y, op)
     #helper
     for i in zip(x,y)
@@ -34,13 +37,20 @@ function test_nonDominatedCompare(n::Int, fitnessSize::Int)
     end
     return true
   end
+  
   for i in tests
     for j in tests
       v = nonDominatedCompare(i,j)
+      #dominating
       if v == 1
 	@test all_compare(i,j, >=) == true
-      elseif v== -1
+      #dominated
+      elseif v == -1
 	@test all_compare(i,j, <=) == true
+      #non dominated and non dominating
+      elseif v == 0
+	@test all_compare(i,j, >) == false
+	@test all_compare(i,j, <) == false
       end
     end
   end
@@ -155,5 +165,23 @@ function test_fastDelete(repet::Int, size::Int)
   return true
 end
 #END test_fastDelete
+
+#BEGIN test_all
+function test_all()
+  #exhaustive
+  test_nonDominatedCompare(1000,3)
+  test_evaluateAgainstOthers(1000,5)
+  test_fastDelete(2000,2000)
+  test_nonDominatedSort(2000, 5)
+  println("All unit tests succeeded")
+  
+  return true
+end
+#END test_all
+
+test_all()
+
+
+#END
 
 

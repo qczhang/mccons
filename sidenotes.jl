@@ -36,3 +36,10 @@
 
 #IMPROVEMENTS
 #is it possible to have directed agressive compilation (like inline...)
+
+#Reminders
+
+
+#indexing with a list
+x = [1,2,3,4,5,6]
+x[[1,1,1,1]] == [1,1,1,1]

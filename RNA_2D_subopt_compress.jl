@@ -10,6 +10,8 @@ import RNA_2D
 #END setup
 
 
+#BEGIN utilities
+
 
 #BEGIN boltzmann
 function boltzmann(energy::FloatingPoint, T = 295)
@@ -35,71 +37,34 @@ end
 
 
 
-#BEGIN test_comparePartitions
-function test_comparePartitions(proportion::FloatingPoint)
-  @assert 0<= proportion <= 1
-  a = getObject("test_compression/test_compress_tRNA-GLY_10k")
-  b = suboptCompress(a, proportion)
-  
-  #get all the info from the partitions
-  partition1 = abstractShape_energy_Partition(a)
-  partition2 = abstractShape_energy_Partition(b)
-  
-  #look at level5 first (arbitrary)
-  p1 = partition1[1]
-  p2 = partition2[1]
-  
-  compared = comparePartitions(p1,p2)
-  l5_1 = partition1[4]
-  l5_2 = partition2[4]
-  
-  cardinalities = Dict{String, (Int, Int)}()
-  for i in keys(compared)
-    cardinalities[i] = (length(get(l5_1, i, [])), length(get(l5_2, i, [])))
-  end
-  
-  result = {}
-  for i in keys(compared)
-    push!(result, (compared[i], cardinalities[i][1], cardinalities[i][2]))
-  end
-  sort!(result, by=x->x[1], rev=true)
-  
-  return result
-end
-#END test_comparePartitions
-
-
-
 #BEGIN comparePartitions
 function comparePartitions(partition1, partition2)
   #look at level5 first (arbitrary)
   #the input is directly from abstractShape_energy_Partition
-  @assert length(p1)==length(p2)==6
+  @assert length(partition1)==length(partition2)==6
+    
+  #get the shape=>suboptimals to evaluate the number of structures per abstract shape
+  l5_1 = partition1[4]
+  l5_2 = partition2[4]
+  
+  #establish mapping {shape=>cardinality} for each shape
+  cardinalities = Dict{String, (Int, Int)}()
+  for i in keys(l5_1)
+    cardinalities[i] = (length(get(l5_1, i, [])), length(get(l5_2, i, [])))
+  end
+  #lazy but it works
+  for i in keys(l5_2)
+    cardinalities[i] = (length(get(l5_1, i, [])), length(get(l5_2, i, [])))
+  end
   
   #get the energies per abstract shape
   p1 = partition1[1]
   p2 = partition2[1]
   
-  #get the shape=>suboptimals to evaluate the number of structures per abstract shape
-  l5_1 = partition1[4]
-  l5_2 = partition2[4]
-  
-  #
-  cardinalities = Dict{String, (Int, Int)}()
-  for i in keys(compared)
-    cardinalities[i] = (length(get(l5_1, i, [])), length(get(l5_2, i, [])))
-  end
-  
-  result = {}
-  for i in keys(compared)
-    push!(result, (compared[i], cardinalities[i][1], cardinalities[i][2]))
-  end
-  sort!(result, by=x->x[1], rev=true)
-  #
+  #get the Qs for both of them
   Qs1 = BigFloat(0)
   Qs2 = BigFloat(0)
-  
-  #get the Qs for both of them
+
   for i in keys(p1)
     Qs1 += p1[i] 
   end
@@ -108,7 +73,7 @@ function comparePartitions(partition1, partition2)
     Qs2 += p2[i]
   end
   
-  #divide the values
+  #divide the probability per partition to get it relative to 1
   for i in keys(p1)
     p1[i] /= Qs1
   end
@@ -116,38 +81,65 @@ function comparePartitions(partition1, partition2)
     p2[i] /= Qs2
   end
   
-  #assign the absolute difference of probability
-  #do not assume that they have the all the same keys
-  result = Dict{String, BigFloat}()
+  #find the discrepency for each abstract shape class
+  #do not assume that both have the same abstract shape classes
+  discrepency = Dict{String, BigFloat}()
   for i in keys(p1)
-    result[i] = p1[i]
+    discrepency[i] = p1[i]
   end
   
   for i in keys(p2)
-    result[i] = abs(get(result, i, BigFloat(0)) - p2[i])
+    discrepency[i] = abs(get(discrepency, i, BigFloat(0)) - p2[i])
   end
+  
+  #format the result
+  result = {}
+  for i in keys(discrepency)
+    push!(result, (discrepency[i], cardinalities[i][1], cardinalities[i][2]))
+  end
+  
+  #sort the output by worst to best discrepency (high to low)
+  sort!(result, by=x->x[1], rev=true)
+  
   return result
 end
 #END comparePartitions
 
 
 
+#END utilities
+
+
+
+#BEGIN incomplete
+
+
 #BEGIN fixedPointFlashFold
-function fixedPointFlashFold(structure::String,initialFT::Int, maxFT::Int, incrementSize::Int, epsilon::FloatingPoint)
-  #run flashfold until there is a fixed point reached in the output
-  #using a small increment will automatically stop it (will create so little change)
-  #will only run if f32 in the path...
-  dataBefore = abstractShape_energy_Partition(callFlashFold(structure, initialFT))
-  while initialFT < maxFT
-    #fetch the next suboptimals and calculate their partition
-    initialFT += incrementSize
-    dataAfter = abstractShape_energy_Partition(callFlashFold(structure, initialFT))
-    #compare the previous and the actual
-   
-  end
-end
+# function fixedPointFlashFold(structure::String,initialFT::Int, maxFT::Int, incrementSize::Int, epsilon::FloatingPoint)
+#   #run flashfold until there is a fixed point reached in the output
+#   #using a small increment will automatically stop it (will create so little change)
+#   #will only run if f32 in the path...
+#   
+#   #like Paul said, this should not use the floating threshold in FF otherwise it would slow down the computation
+#   #can iteratively increase the free energy boundary and | wc -l  or use the -c option to not output but instead of 
+#   #calculating it and using RAM for nothing.
+#   dataBefore = abstractShape_energy_Partition(callFlashFold(structure, initialFT))
+#   while initialFT < maxFT
+#     #fetch the next suboptimals and calculate their partition
+#     initialFT += incrementSize
+#     dataAfter = abstractShape_energy_Partition(callFlashFold(structure, initialFT))
+#     #compare the previous and the actual
+#    
+#   end
+# end
 #END fixedPointFlashFold
 
+
+#END incomplete
+
+
+
+#BEGIN compression
 
 
 #BEGIN abstractShape_energy_Partition
@@ -185,6 +177,9 @@ end
 
 #BEGIN rouletteWheelSel
 function rouletteWheelSel(l::Vector, proportion::FloatingPoint)
+  #implements the classical genetic algorithm roulette wheel selection
+  #fitness proportionate selection
+  #O(n^2) so think before using
   @assert 0 <= proportion <= 1
   #its granular, not much to do about it
   n = ceil(length(l)*proportion)
@@ -284,9 +279,11 @@ end
 
 
 #BEGIN suboptCompress
-function suboptCompress(suboptList::Vector, proportion::FloatingPoint)
+function suboptCompress(suboptList::Vector, proportion::FloatingPoint, choose = stochasticUniversalSampling)
   #there is a big risk of losing much of the fidelity if there is too much
   #granularity (the proportion is too small in relation to the original)
+  
+  #choose could also be roulette wheel selection
   @assert 0 <= proportion <= 1
  
   #calculate the abstract shape clustering and cumulative boltzmann
@@ -306,13 +303,16 @@ function suboptCompress(suboptList::Vector, proportion::FloatingPoint)
   #level 5 sampling
   l5Keys = collect(keys(shapeToSubopts[1]))
   for k in l5Keys
-    selection_lvl_5 = vcat(selection_lvl_5, stochasticUniversalSampling(shapeToSubopts[1][k], proportion))
+    selection_lvl_5 = vcat(selection_lvl_5, choose(shapeToSubopts[1][k], proportion))
   end
   
   #only level5 is implemented yet
   return selection_lvl_5
 end
 #END suboptCompress
+
+
+#END compression
 
 
 
@@ -358,63 +358,20 @@ end
  
  
   
-#BEGIN testCompressionPerformance
-function testCompressionPerformance(initialsuboptList::Vector, proportion::FloatingPoint)
-
-  #compress the suboptimals
-  finalsuboptList = suboptCompress(initialsuboptList, proportion)
+#BEGIN try_comparePartitions
+function try_comparePartitions(proportion::FloatingPoint)
+  #just used to get an idea
+  @assert 0<= proportion <= 1
+  a = getObject("test_compression/test_compress_tRNA-GLY_10k")
   
-  #calculate their respective shape / energy partitions
-  p1 = abstractShape_energy_Partition(initialsuboptList)
-  p2 = abstractShape_energy_Partition(finalsuboptList)
+  #we compress the first one by a "proportion" of the original
+  b = suboptCompress(a, proportion)
   
-#   println("keys of initial = $(collect(keys(p1[1])))")
-#   println("keys of final = $(collect(keys(p2[1])))")
-  #initialize the result dict
-  result = Dict{String, (BigFloat, BigFloat)}()
-  
-  #calculate the sums of boltzmann energy 
-  s1 = BigFloat(0)
-  for i in keys(p1[1])
-    s1 += p1[1][i]
-  end
-  
-  s2 = BigFloat(0)
-  for i in keys(p2[1])
-    s2 += p2[1][i]
-  end
-  
-  #calculate the relative proportion
-  for i in keys(p1[1])
-    result[i] = ((p1[1][i])/s1, (p2[1][i])/s2)
-  end
-  #\todo debug la somme semble pas etre a 100............
-  
-  #get the dicts to arrays
-  ar = (String, BigFloat, BigFloat)[]
-  for i in keys(result)
-    push!(ar, (i, result[i][1], result[i][2]))
-  end
-  sort!(ar, by = x->x[2], rev = true)
-  return ar
+  return comparePartitions(abstractShape_energy_Partition(a),abstractShape_energy_Partition(b))
 end
+#END try_comparePartitions
   
-#   
-#   for i in l5_keys
-#     l5_bias += ((l5[i] - get(p2[1], i, 0.0))^2) 
-#   end
-#   l5_bias /= length(l5_keys)
-#   for i in l3_keys
-#     l3_bias += ((l3[i] - get(p2[2], i, 0.0))^2)
-#   end
-#   l3_bias /= length(l3_keys)
-#   for i in l1_keys
-#     l1_bias += ((l1[i] - get(p2[3], i, 0.0))^2)
-#   end
-#   l1_bias /= length(l1_keys)
-#   return {l5_bias, l3_bias, l1_bias}
-# end
-#END testCompressionPerformance
+
 
 
 
