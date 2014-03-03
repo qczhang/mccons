@@ -17,10 +17,9 @@ using Base.Test
 
 
 
-
 #BEGIN test_nonDominatedCompare
 function test_nonDominatedCompare(n::Int, fitnessSize::Int)
-  #exhaustive unit test
+  #test by property 
   tests = {}
   
   #create vector of random fitness arrays
@@ -63,7 +62,7 @@ end
 #BEGIN randomFitnessArray
 function randomFitnessArray(fitnessLen::Int)
   #helper
-  return map(abs, rand(Int16, fitnessLen))
+  return map(abs, rand(1:10000, fitnessLen))
 end
 #END randomFitnessArray
 
@@ -73,9 +72,9 @@ end
 function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #unit test
   #exhaustive
-  pop = population(solution[], Dict{Vector, (Int, FloatingPoint)}())
+  pop = population()
   for i =  1: cardinality
-    push!(pop.solutions, solution([],randomFitnessArray(fitnessLen)))
+    push!(pop.solutions, solution([42],randomFitnessArray(fitnessLen)))
   end
 
   sorts = nonDominatedSort(pop)
@@ -112,9 +111,9 @@ end
 function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_method = nonDominatedCompare)
   #exhaustive unit test
   #generate the population
-  pop = population(solution[], Dict{Vector, (Int, FloatingPoint)}())
+  pop = population()
   for i =  1: cardinality
-    push!(pop.solutions, solution([],randomFitnessArray(fitnessLen)))
+    push!(pop.solutions, solution([42],randomFitnessArray(fitnessLen)))
   end
   #evaluate all solutions
   result = {}
@@ -146,9 +145,11 @@ end
 
 
 #BEGIN generatePosRandInt
-function generatePosRandInt(n::Int)
+function generatePosRandInt(n::Int, minInt = 1, maxInt = 10000)
   #helper
-  return filter(x->x>0, unique(sort(rand(Int16, n))))
+  @assert minInt < maxInt
+  @assert n > 0
+  return sort(rand(minInt:maxInt, n))
 end
 #END generatePosRandInt
 
@@ -172,7 +173,7 @@ end
 function generatePop(size::Int, fitnessLen::Int)
   p = solution[]
   for i = 1:size
-    push!(p, solution({}, randomFitnessArray(fitnessLen)))
+    push!(p, solution({42}, randomFitnessArray(fitnessLen)))
   end
   
   return population(p)
@@ -185,13 +186,13 @@ end
 function test_crowdingDistance()
   #create population
   p = solution[]
-  push!(p, solution({}, [0,5]))
-  push!(p, solution({}, [0,5]))
-  push!(p, solution({}, [2,2]))
-  push!(p, solution({}, [3,1]))
-  push!(p, solution({}, [3,1]))
-  push!(p, solution({}, [3,1]))
-  push!(p, solution({}, [5,0]))
+  push!(p, solution({42}, [0,5]))
+  push!(p, solution({42}, [0,5]))
+  push!(p, solution({42}, [2,2]))
+  push!(p, solution({42}, [3,1]))
+  push!(p, solution({42}, [3,1]))
+  push!(p, solution({42}, [3,1]))
+  push!(p, solution({42}, [5,0]))
   pop = population(p)
   
   #sort into fronts
@@ -208,6 +209,14 @@ function test_crowdingDistance()
   
 end
 #END
+
+
+
+#BEGIN test_lastFrontSelection
+
+
+#END
+
 
 
 #BEGIN test_all

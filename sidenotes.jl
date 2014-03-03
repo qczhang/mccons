@@ -43,3 +43,7 @@
 #indexing with a list
 x = [1,2,3,4,5,6]
 x[[1,1,1,1]] == [1,1,1,1]
+
+
+#cool refs
+#http://bibiserv.techfak.uni-bielefeld.de/cgi-bin/dpcourse

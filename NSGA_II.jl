@@ -20,11 +20,22 @@
 
 
 #BEGIN type definitions
-
 immutable solution
   units::Vector
   fitness::Vector
+  
+  function solution(units::Vector, fitnessValues::Vector)
+    @assert length(units) != 0
+    @assert length(fitnessValues) != 0
+    self = new(units, fitnessValues)
+  end
+  
+  function solution(units::Vector, fitnessFunction)
+    @assert length(units) != 0
+    self = new(units, fitnessFunction(units))
+  end
 end
+
 
 
 type population
@@ -32,18 +43,32 @@ type population
   # {fitness => (Front, CrowdingDistance)}
   distances::Dict{Vector, (Int, FloatingPoint)}
   
+  function population()
+    #initialize empty
+    self = new(solution[], Dict{Vector, (Int, FloatingPoint)}())
+  end
+  
   function population(solutions::Vector{solution})
+    #initialize with solutions but no distances
+    @assert length(solutions) != 0
     d = Dict{Vector, (Int, FloatingPoint)}()
     self = new(solutions, d)
   end
   
   function population(solutions::Vector{solution}, distances::Dict{Vector, (Int, FloatingPoint)})
+    #initialize with solutions and distances
+    @assert length(solutions) != 0
+    @assert length(distances) != 0
     self = new(solutions, distances)
   end
 end
 
+
+
 #Hall of Fame is a special population
 typealias hallOfFame population
+
+
 
 #END
 
@@ -54,42 +79,45 @@ typealias hallOfFame population
 
 #BEGIN nonDominatedSort
 function nonDominatedSort(pop::population)
-  #input: 2N population
-  #output: at least N solutions, the output likely has one front too much
+  #sort a population into m nondominating fronts (1 = best, m = worst)
+  #until at least half the original number of solutions are added
   
   #get number of solutions to keep
-  len = length(pop.solutions)
-  cutoff = ceil(len/2)
+  populationSize = length(pop.solutions)
+  cutoff = ceil(populationSize/2)
 
-  #get domination count and identity of dominators
-  values = (Int, Int, Array{Int,1})[]
-  for i = 1:len
+  #values = (index, domination count, identity of dominators)
+  values = (Int, Int, Vector{Int})[]
+  for i = 1:populationSize
     push!(values, evaluateAgainstOthers(pop, i, nonDominatedCompare))
   end
   
-  fronts = Vector{Int}[]
+  #hold indices of the n solutions into m 
+  result = Vector{Int}[]
   
-  #nondominated sort
   while length(values) > cutoff
-    #find the dominators
+    #find the nondominated solutions
     front = filter(x->x[2] == 0, values)
+    #get indices
     frontIndices = map(x->x[1], front)
-    push!(fronts, frontIndices)
+    #add them to the current front
+    push!(result, frontIndices)
     
-    #exclude the dominators from the values (could reuse)
+    
+    #find the dominated solutions
     values = filter(x->x[2] != 0, values)
     
-    #decrement the count based on the latest front
-    for i in 1:length(values)
+    #remove the latest front indices from the values
+    for i = 1:length(values)
       #delete the last front from the indices
       substracted = fastDelete(values[i][3], frontIndices)
       #substract the difference of cardinality
-      cardinality = length(substracted)
-      values[i] = (values[i][1], cardinality, substracted)
+      values[i] = (values[i][1], length(substracted), substracted)
     end
+    
   end
   
-  return fronts
+  return result
 end
 #END 
 
@@ -97,10 +125,10 @@ end
 
 #BEGIN addToHallOfFame
 function addToHallOfFame(wholePopulation::population, firstFrontIndices::Vector{Int}, bestPop::hallOfFame)
-  #get the first front from the whole population
+  #solutions from first front
   firstFront = wholePopulation.solutions[firstFrontIndices]
   
-  #add the first front to the hall of fame
+  #add them to the hall of fame
   for i in firstFront
     push!(bestPop.solutions, pop[i])
   end
@@ -111,13 +139,13 @@ function addToHallOfFame(wholePopulation::population, firstFrontIndices::Vector{
     push!(values, evaluateAgainstOthers(bestPop, i, nonDominatedCompare))
   end
   
-  #get the first front
+  #get first front solutions
   firstFront = filter(x->x[2]==0, values)
   
-  #get first front indices
+  #get indices
   firstFrontIndices = map(x->x[1], firstFront)
   
-  #substitute for new population in hall of fame
+  #substitute in hall of fame
   bestPop.individuals = bestPop[firstFrontIndices]
 end
 #END
@@ -127,78 +155,51 @@ end
 #BEGIN crowdingDistance
 function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}, frontID::Int, update::Bool)
   #calculate and modify the crowding and front value in the whole population for a certain front
-  #don't use if on the last front
-  #step 1
-  #fetch the individual fitness from the front
+  #fetch fitness from the front
   front = map(x->x.fitness, wholePopulation.solutions[frontIndices])
   
-  #step 2
-  #create a dict {fitness => crowdingDistance} and initialize @ 0
+  #map {fitness => crowdingDistance}
   fitnessToCrowding = Dict{Vector, (Int, FloatingPoint)}()
   for i in front
     fitnessToCrowding[i] = (frontID, 0.0)
   end
 
+  #get information about unique fitness
   fitKeys = collect(keys(fitnessToCrowding))
-  
-  #step 3
-  #do the crowding distance
   numUniqueFitness = length(fitKeys)
   fitnessVectorSize = length(fitKeys[1])
   
-  #step 4
-  #reverse sort all the unique fitness vectors per each objective value
-  sorts = {} #todo: static type this one
+  #reverse sort fitness vectors for each fitness value
+  sorts = Vector{Vector}[]
   for i = 1:fitnessVectorSize
     push!(sorts, sort(fitKeys, by = x->x[i], rev = true))
   end
-#   println("sorts")
-#   for i in sorts
-#   println(i)
-#   println("end")
-#   end
-  
-  #step 5
-  #get the max, min and range of each objective
-  maxFitnesses = {}
-  minFitnesses = {}
+
+  #get max, min and range for each objective
+  maxFitnesses = Number[]
+  minFitnesses = Number[]
   for i = 1:length(sorts)
     push!(maxFitnesses, sorts[i][1][i] )
     push!(minFitnesses, sorts[i][end][i])
   end
   rangeSize = map(x->(x[1]-x[2]), zip(maxFitnesses, minFitnesses))
-
   
-  #step 6
   #assign infinite crowding distance to maximum and minimum fitness vectors for each objective 
   map(x->fitnessToCrowding[x[end]] = (frontID, Inf), sorts)
   map(x->fitnessToCrowding[x[1]]   = (frontID, Inf), sorts)
-  
- 
-  #step 7
+
   #assign crowding distances to the other fitness vectors for each objectives
-#   println(fitnessToCrowding)
   for i = 1:fitnessVectorSize
     for j = 2:(numUniqueFitness-1)
-#       println("previous = $(fitnessToCrowding[sorts[i][j]][2])")
-#       println("bigger  = $(sorts[i][j-1][i])")
-#       println("smaller = $(sorts[i][j+1][i])")
-      value = (fitnessToCrowding[sorts[i][j]][2] + (((sorts[i][j-1][i] - sorts[i][j+1][i]))/rangeSize[i]))
-#       println("value = $value\n")
       fitnessToCrowding[sorts[i][j]] = (frontID, (fitnessToCrowding[sorts[i][j]][2] + (((sorts[i][j-1][i] - sorts[i][j+1][i]))/rangeSize[i])))
-#       println("")
     end
   end
   
-  #step 8
-  #merge the front crowding distance dictionary with the one of the population
-  #this assigns both the crowding distance and the front value
+  #add computed front id and crowding distances to population dict
   if update == true
     merge!(wholePopulation.distances, fitnessToCrowding)
   end
   
-  #step 9
-  #return
   return fitnessToCrowding
 end
 #END
@@ -207,99 +208,213 @@ end
 
 #BEGIN lastFrontSelection
 function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vector{Int}, lastFrontId::Int, k::Int)
-  #select k solutions from the last front 
-  
-  #create mapping fitness => crowding
+  @assert 0 < k <= length(lastFrontIndices)
+
+  #map {fitness => crowding distance}
   fitnessToCrowding = crowdingDistance(wholePopulation, lastFrontIndices, -1, false)
-  \todo TOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO DOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-  #create mapping fitness => lastFrontIndices index
-  fitnessToIndex = Dict{Vector{Int}, Vector{Int}}()
+
+  #map {fitness => indices}
+  fitnessToIndex = Dict{Vector, Vector{Int}}()
   for i = 1:length(lastFrontIndices)
     fitnessAtIndex = wholePopulation.solutions[lastFrontIndices[i]].fitness
     fitnessToIndex[fitnessAtIndex] = push!(get(fitnessToIndex, fitnessAtIndex, Int[]), lastFrontIndices[i])
   end
   
-  #F is a list of fitness sorted by decreasing crowding distance
-  F = sort(lastFront, rev = true)
+  #sort fitness by decreasing crowding distance
+  fitnessByCrowding = sort(collect(keys(fitnessToCrowding)), by = k->fitnessToCrowding[k], rev = true)
+  
+  #choose solutions by iterating through unique fitness list in decreasing order of crowding distance
   chosenOnes = Int[]
   j = 1
   while length(chosenOnes) != k
     len = length(fitnessToIndex(F[j]))
-    #more than one solution with same fitness
-    if len > 1
-      sample = rand([1:len])
+    
+    if len > 1 #multiple solutions with same fitness
+      sample = rand(1:len)
       index = fitnessToIndex[F[j]][sample]
       push!(consenOnes, index)
       #solutions can be picked only once
       deleteat!(fitnessToIndex[F[j]], sample)
-    #only one solution with this fitness
-    else
+    
+    else #single solution with this fitness
       index = fitnessToIndex[F[j]][1]
       push!(chosenOnes, index)
       deleteat!(F, j)
     end
-    j= (j+1)%length(F)
+    
+    j += 1
+    #wrap around
+    if j>length(F)
+      j = 1
+    end
   end
   
   #get the new crowding distance values for the last front and push it to the whole population
   crowdingDistance(wholePopulation, chosenOnes, lastFrontID, true)
-  
-   return chosenOnes
 end
-#END
-
-
-
-#BEGIN sample
-function sample(L::Vector, k::Int)
-  #take k elements from L without replacing
-  L2 = copy(L)
-  result = {}
-  for i = 1:k
-    randIndex = rand(1:length(L2))
-    push!(result, L2[randIndex])
-    deleteat!(L2, randIndex)
-  end
-  return result
-end  
 #END
 
 
 
 #BEGIN UFTournSelection
-function UFTournSelection(L::population)
+function UFTournSelection(pop::population)
   #unique fitness based tournament selection
-  N = length(L.solutions)
+  cardinality = length(pop.solutions)
+  result = solution[]
   
-  #map fitnesses to indices
-  values = (Int, Vector)[]
-  for i=1:length(population.solutions)
-    push!(values, (i, population.solutions[i].fitness))
+  #map {fitness => indices}
+  fitnessToIndex = Dict{Vector, Vector{Int}}()
+  for i = 1:length(population.solutions)
+    fitnessToIndex[pop.solutions[i]] = push!(get(fitnessToIndex, pop.solutions[i], Int[]), i)
   end
   
-  fitnessToIndex = uniqueFitness(values)
+  #keys of map {fitness => indices}
+  fitnessKeys = collect(keys(fitnessToIndex))
   
-  #extreme case : all fitnesses are equal
+  #edge case : only one fitness
   if length(fitnessToIndex) == 1
-    return L
+    return pop
   end
   
-  #
-  S = {}
-  #while the size of S is not equal to N...
-  while length(S) != N
-    k = min(2*(N - length(S)), length(fitnessToIndex))
+  #solutions selected to parent new population
+  chosen = Vector[]
+  
+  while length(chosen) != cardinality
+    k = minimum((2*(cardinality - length(chosen))), length(fitnessToIndex))
+    
+    #get k fitnesses and associate to their (front, crowding)
+    candidateFitnesses = SAMPLE(fitnessKeys, k)
+    vals = map(x->pop.distances[x], candidateFitnesses)
+    
+    #push the chosen fitnesses in the chosen array
+    for i in Range(1, 2, k)
+      push!(chosen,  candidateFitnesses[i + crowdedCompare(vals[i], vals[i+1])])
+    end
+    
   end
   
-  
+  #select a random 
+  S = map(x -> fitnessToIndex[x][rand(1 : length(fitnessToIndex[x]))], chosen)
+
+  return S
 end
 #END
 
 
+
+#BEGIN generateOffsprings
+function generateOffsprings(parents::Vector{solution}, 
+                            probabilityOfCrossover::FloatingPoint,
+                            probabilityOfMutation::FloatingPoint,
+                            evaluationFunction,
+                            alleles,
+                            mutationOperator = uniformMutate,
+                            mutationStrength = 0.05,
+                            crossoverOperator = halfUniformCrossover)
+  
+  #parents -> children
+  children = population[]
+  popSize = length(parents)
+  
+  #choice vectors
+  mut   = map(x->x <= probabilityOfMutation,  rand(length(parents)))
+  cross = map(x->x <= probabilityOfCrossover, rand(length(parents)))
+  
+  #zip them together
+  choices = zip(cross, mut)
+  
+  for i = 1:popSize  
+    #no change implies no re-evaluation
+    if choices[i] == [false, false]
+      push!(children.solutions, parents[i])
+      
+    else
+      #else proceed through operators and evaluate new solution
+      newUnits = parents[i].units
+      
+      #crossover operation
+      if choices[i][1] == true
+        #find second parent to mix with
+        secondParentIndex = rand(1:(popSize-1))
+        
+        if secondParentIndex >= i
+          secondParentIndex += 1
+        end
+        
+        newUnits = halfUniformCrossover(newUnits, parents[secondParentIndex].units)
+      end
+    
+      #mutate operation
+      if choices[i][2] == true
+        newUnits = mutationOperator(newUnits, mutationStrength, alleles)
+      end
+      
+    end
+    
+    push!(children.solutions, solution(newUnits, evaluationFunction))
+  end
+  
+  return children
+end
 #END
- 
+
+#END
+
+
 
 #BEGIN helper methods
+
+
+
+#BEGIN SAMPLE
+function SAMPLE(L::Vector, k::Int)
+  #take k elements from L without replacing
+  result = {}
+  len = length(L)
+  Lcopied = copy(L)
+  
+  if k == len
+    return Lcopied
+  end
+  
+  for i = 1:k
+    randIndex = rand(1:len)
+    push!(result, Lcopied[randIndex])
+    deleteat!(Lcopied, randIndex)
+    len -= 1
+  end
+  return result
+end
+#END
+
+
+
+#BEGIN crowdedCompare
+function crowdedCompare(valueA::(Int, FloatingPoint), valueB::(Int, FloatingPoint))
+  @assert valueA[1]>0
+  @assert valueB[1]>0
+  @assert valueA[2]>=0
+  @assert valueA[2]>=0
+  # A rank < B rank
+  if valueA[1] < valueB[1]
+    return 0
+  # B rank < A rank
+  elseif valueA[1] > valueB[1]
+    return 1
+  # A dist > B dist
+  elseif valueA[2] > valueB[2]
+    return 0
+  # B dist > A dist
+  elseif valueA[2] < valueB[2]
+    return 1
+  # A == B, choose either
+  else
+    return rand(0:1)
+  end
+end  
+#END
+
+
 
 #BEGIN nonDominatedCompare
 function nonDominatedCompare (a::Vector, b::Vector, comparator = >)
@@ -336,9 +451,13 @@ function nonDominatedCompare (a::Vector, b::Vector, comparator = >)
 end
 #END
 
+
+
 #BEGIN evaluateAgainstOthers
-function evaluateAgainstOthers(pop::population, index::Int, compare_method = nonDominatedCompare)
-  #compare the object at index with the rest of the vector
+function evaluateAgainstOthers(pop::population, 
+                               index::Int, 
+                               compare_method = nonDominatedCompare)
+  #compare object at index with rest of the vector
   count = 0
   dominatedby = Int[]
   indFit = pop.solutions[index].fitness
@@ -365,6 +484,8 @@ function evaluateAgainstOthers(pop::population, index::Int, compare_method = non
 end
 #END
 
+
+
 #BEGIN fastDelete
 function fastDelete(values::Vector, deletion::Vector)
   #helper, inside non dominated sorting
@@ -374,7 +495,7 @@ function fastDelete(values::Vector, deletion::Vector)
   result = Int[]
   indexDel = 1
   for i in values
-    #iterate to the next "good" index, value > or = to i
+    #iterate to the next valid index, value >= to i
     while (deletion[indexDel] < i) && (indexDel < length(deletion))
       indexDel += 1
     end
@@ -386,7 +507,99 @@ function fastDelete(values::Vector, deletion::Vector)
 end
 #END
 
+
+
+#BEGIN  uniformCrossover
+function uniformCrossover(units1::Vector, units2::Vector)
+  @assert length(units1) == length(units2) != 0
+  
+  newUnits = deepcopy(units1)
+  units2 = deepcopy(units2)
+  
+  for i = 1:length(newUnits)
+    if rand() < 0.5
+      newUnits[i] = units2[i]
+    end
+  end
+  
+  return newUnits
+end
 #END
 
+
+
+#BEGIN halfUniformCrossover
+function halfUniformCrossover(units1::Vector, units2::Vector)
+  #from wikipedia:
+  #In the half uniform crossover scheme (HUX), exactly half of the nonmatching
+  #bits are swapped. Thus first the Hamming distance (the number of differing bits) 
+  #is calculated. This number is divided by two. The resulting number is how many 
+  #of the bits that do not match between the two parents will be swapped.
+  @assert length(units1) == length(units2) != 0
+  result = deepcopy(units1)
+  units2 = deepcopy(units2)
+  
+  #find how many are matching
+  matching = map(x->x[1]==x[2] ? 1 : 0, zip(result, units2))
+  sumDifferent = length(matching) - reduce(+, matching)
+  
+  #need to swap at least half of the number of non matching
+  toSwap = ceil(sumDifferent / 2)
+  
+  #if not matching, 0.5 probability of exchange
+  for i = 1:length(matching)
+    if matching[i] == 0
+      if rand() < 0.5
+        result[i] = units2[i]
+      end
+    end
+  end
+  
+  return result
+end
+#END
+
+
+
+#BEGIN onePointCrossover
+function onePointCrossover(units1::Vector, units2::Vector)
+  #swap at one point
+  @assert length(units1) == length(units2) != 0
+  result = deepcopy(units1)
+  units2 = deepcopy(units2)
+  
+  #find point
+  p = rand(1:length(result))
+  
+  #swap the values after the point
+  for i = p:length(result)
+    result[i] = units2[i]
+  end
+  
+  return result
+end
+#END
+
+
+
+#BEGIN uniformMutate
+function uniformMutate(individualUnits::Vector, probability::FloatingPoint, alleles::Vector{Vector})
+  #copy the individual units
+  newUnits = deepcopy(individualUnits)
+  
+  #for each unit, mutate if random is inferior to given probability
+  for i = 1:length(newUnits)
+    if(rand() < probability)
+      newUnits[i] = alleles[i][rand(1:length(alleles[i]))]
+    end
+  end
+  
+  return newUnits
+end
+#END
+
+
+
+#END
 
 
