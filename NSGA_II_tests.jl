@@ -15,6 +15,22 @@ using Base.Test
 
 #BEGIN unit tests
 
+#BEGIN test_solution
+function test_solution()
+  #tests constuctors for solution
+  s1 = solution([2], [4])
+  s2 = solution([2], x->map(y->2*y, x))
+  @test s1 == s2
+end
+#END
+
+#BEGIN test_population
+function test_population()
+  #tests constructors for population
+  
+end
+
+#END
 
 
 #BEGIN test_nonDominatedCompare
@@ -62,7 +78,7 @@ end
 #BEGIN randomFitnessArray
 function randomFitnessArray(fitnessLen::Int)
   #helper
-  return map(abs, rand(1:10000, fitnessLen))
+  return rand(1:10000, fitnessLen)
 end
 #END randomFitnessArray
 
