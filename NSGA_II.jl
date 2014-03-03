@@ -160,8 +160,8 @@ function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}
   
   #map {fitness => crowdingDistance}
   fitnessToCrowding = Dict{Vector, (Int, FloatingPoint)}()
-  for i in front
-    fitnessToCrowding[i] = (frontID, 0.0)
+  for v in front
+    fitnessToCrowding[v] = (frontID, 0.0)
   end
 
   #get information about unique fitness
@@ -171,16 +171,15 @@ function crowdingDistance(wholePopulation::population, frontIndices::Vector{Int}
   
   #reverse sort fitness vectors for each fitness value
   sorts = Vector{Vector}[]
-  for i = 1:fitnessVectorSize
-    push!(sorts, sort(fitKeys, by = x->x[i], rev = true))
-  end
-
-  #get max, min and range for each objective
   maxFitnesses = Number[]
   minFitnesses = Number[]
-  for i = 1:length(sorts)
-    push!(maxFitnesses, sorts[i][1][i] )
-    push!(minFitnesses, sorts[i][end][i])
+  
+  #get max, min and range for each objective
+  for i = 1:fitnessVectorSize
+    tmp = sort(fitKeys, by = x->x[i], rev = true)
+    push!(maxFitnesses, tmp[1][i])
+    push!(minFitnesses, tmp[end][i])
+    push!(sorts, tmp)
   end
   rangeSize = map(x->(x[1]-x[2]), zip(maxFitnesses, minFitnesses))
   
@@ -227,24 +226,24 @@ function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vecto
   chosenOnes = Int[]
   j = 1
   while length(chosenOnes) != k
-    len = length(fitnessToIndex(F[j]))
+    len = length(fitnessToIndex[fitnessByCrowding[j]])
     
     if len > 1 #multiple solutions with same fitness
       sample = rand(1:len)
-      index = fitnessToIndex[F[j]][sample]
-      push!(consenOnes, index)
+      index = fitnessToIndex[fitnessByCrowding[j]][sample]
+      push!(chosenOnes, index)
       #solutions can be picked only once
-      deleteat!(fitnessToIndex[F[j]], sample)
+      deleteat!(fitnessToIndex[fitnessByCrowding[j]], sample)
     
     else #single solution with this fitness
-      index = fitnessToIndex[F[j]][1]
+      index = fitnessToIndex[fitnessByCrowding[j]][1]
       push!(chosenOnes, index)
-      deleteat!(F, j)
+      deleteat!(fitnessByCrowding, j)
     end
     
     j += 1
     #wrap around
-    if j>length(F)
+    if j>length(fitnessByCrowding)
       j = 1
     end
   end
@@ -264,7 +263,7 @@ function UFTournSelection(pop::population)
   
   #map {fitness => indices}
   fitnessToIndex = Dict{Vector, Vector{Int}}()
-  for i = 1:length(population.solutions)
+  for i = 1:cardinality
     fitnessToIndex[pop.solutions[i]] = push!(get(fitnessToIndex, pop.solutions[i], Int[]), i)
   end
   
@@ -280,7 +279,7 @@ function UFTournSelection(pop::population)
   chosen = Vector[]
   
   while length(chosen) != cardinality
-    k = minimum((2*(cardinality - length(chosen))), length(fitnessToIndex))
+    k = min((2*(cardinality - length(chosen))), length(fitnessToIndex))
     
     #get k fitnesses and associate to their (front, crowding)
     candidateFitnesses = SAMPLE(fitnessKeys, k)
@@ -313,7 +312,7 @@ function generateOffsprings(parents::Vector{solution},
                             crossoverOperator = halfUniformCrossover)
   
   #parents -> children
-  children = population[]
+  children = population()
   popSize = length(parents)
   
   #choice vectors
@@ -349,9 +348,8 @@ function generateOffsprings(parents::Vector{solution},
         newUnits = mutationOperator(newUnits, mutationStrength, alleles)
       end
       
+      push!(children.solutions, solution(newUnits, evaluationFunction))
     end
-    
-    push!(children.solutions, solution(newUnits, evaluationFunction))
   end
   
   return children
@@ -371,7 +369,7 @@ function SAMPLE(L::Vector, k::Int)
   #take k elements from L without replacing
   result = {}
   len = length(L)
-  Lcopied = copy(L)
+  Lcopied = deepcopy(L)
   
   if k == len
     return Lcopied
@@ -492,6 +490,8 @@ function fastDelete(values::Vector, deletion::Vector)
   #both vectors are sorted, start in natural, start > 0, nonempty
   @assert values[1] > 0
   @assert deletion[1] > 0
+  @assert issorted(values)
+  @assert issorted(deletion)
   result = Int[]
   indexDel = 1
   for i in values
