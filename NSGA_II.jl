@@ -3,6 +3,8 @@
 #BEGIN readme
 #Simple implementation of the NSGA-II multiobjective
 #genetic algorithm.
+
+#Based on "Revisiting the NSGA-II crowding-distance computation"
 #END
 
 

@@ -185,16 +185,16 @@ end
 
 function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   function distanceBP(a::(Int, Int), b::(Int, Int))
-    return maximum((abs(a[1]-b[1])), abs(a[2]-b[2]))
+    return max(abs(a[1]-b[1]), abs(a[2]-b[2]))
   end
   
   function distanceBPtoSet(a::(Int, Int), b::Vector{(Int,Int)})
-    return minimum(map(x->compareHausdorff(a,x), b))
+    return minimum(map(x->distanceBP(a,x), b))
   end
   
   hausdorffLefttoRight = maximum(map(x->distanceBPtoSet(x,bp2), bp1))
-  hausdorffRightToLeft = minimum(map(x->distanceBPtoSet(x,bp1), bp2))
-  return maximum(hausdorffLefttoRight, hausdorffRightToLeft)
+  hausdorffRightToLeft = maximum(map(x->distanceBPtoSet(x,bp1), bp2))
+  return max(hausdorffLefttoRight, hausdorffRightToLeft)
 end
 #END
 
