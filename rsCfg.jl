@@ -2,13 +2,31 @@
 #based on Generating Strings at Random from a Context Free Grammar
 
 
-typealias sym = Char
+type nonterminal
+  v::Char
+end
 
-typealias terminal = Char
+type terminal
+  v::Char
+end
 
-typealias nonterminals = Set{sym}
+typealias nonterminals Set{nonterminal}
 
-typealias terminals =  Set{terminal}
+typealias terminals Set{terminal}
+
+
+type productionRule
+  input::nonterminal
+  output::Set
+  
+  function produce(n::sym)
+    if n == input
+      return output
+    else
+      return None
+    end
+  end  
+end
 
 
 #the grammar must not contain epsilon productions
@@ -24,19 +42,28 @@ type grammar
     @assert intersect(nonterm, term) = Set()
     
     #assert terminal and non terminal symbols used in the production rules make sense
+    nonterms = Set()
+    terms = Set()
     for i in productions
-      @assert i.input in nonterm
-      @assert union(intersect(i.output, term), intersect(i.output,nonterm)) == output
-
+      inp = Set()
+      outp = Set()
+      for j in i.input
+	push!(inp, collect(j))
+      end
+      
+      for j in i.output
+	push!(outp, collect(j))
+      end
+      
+      nonterms = union(nonterms, inp)
+      terms = union(terms, outp)
+    end
+    @assert union(intersect(nonterms, nonterm), intersect(terms, term)
     
-  
-type productionRule
-  input::sym
-  output::Set{sym}
-  
-  function produce(n::nonterminal)
-    @assert n == input
-    return output
+    self = new(nonterm, term, start, productions)
   end
 end
+    
+  
+
     
