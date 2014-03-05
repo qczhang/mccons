@@ -1,4 +1,4 @@
-
+module NSGA_II
 
 #BEGIN readme
 #Simple implementation of the NSGA-II multiobjective
@@ -603,5 +603,5 @@ end
 
 
 #END
-
+end
 

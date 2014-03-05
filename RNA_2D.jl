@@ -21,28 +21,28 @@ module RNA_2D
 
 #BEGIN exported methods
 export structure, testDotBracket, dotBracketToMountain, dotBracketToBPSet,
-compareMountainDistance, fastCompareBPSet, compareHausdorff, RNAshapes
+compareMountainDistance, compareBPSet, compareHausdorff, RNAshapes
 #END 
 
 
 
 #BEGIN type definition
 immutable structure
-  family::Int #needed in mccons
+  family #needed in mccons
   dotBracket::String
   mountain::Vector{Int}
   base_pair_set::Vector{(Int,Int)}
   energy::FloatingPoint
   
-  function structure(family::Int, dotBracketInput::String)
-    @assert testDotBracket(dotBracketInput) 
+  function structure(family, dotBracketInput::String)
+    @assert testDotBracket(dotBracketInput) == true
     mountain = dotBracketToMountain(dotBracketInput)
     base_pair_set = dotBracketToBPSet(dotBracketInput)
     self = new(family, dotBracketInput, mountain, base_pair_set, -Inf)
   end
   
-  function structure(family::Int, dotBracketInput::String, energy::FloatingPoint)
-    @assert testDotBracket(dotBracketInput) 
+  function structure(family, dotBracketInput::String, energy::FloatingPoint)
+    @assert testDotBracket(dotBracketInput) == true
     mountain = dotBracketToMountain(dotBracketInput)
     base_pair_set = dotBracketToBPSet(dotBracketInput)
     self = new(family, dotBracketInput, mountain, base_pair_set, energy)
@@ -110,7 +110,7 @@ function dotBracketToBPSet(dotBracket::String)
   # "((..))" -> [(1,6), (2,5)]
   bpset= (Int,Int)[]
   accumulator = Int[]
-  count = 0
+  count = 1
   for i in dotBracket
     if(i == '(')
       push!(accumulator, count)

@@ -22,7 +22,14 @@ function test_testDotBracket()
 end
 
 
-
+function test_init_structure()
+  a = RNA_2D.structure(1, "(.)(((((....)))))")
+  b = RNA_2D.structure(2, "(.)(.)(...........)", -42.0)
+  return true
+end
+  
+  
+  
 function slowCompareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   #helper method
   #O(n^2) used for debugging
@@ -161,10 +168,31 @@ end
 
 
 
+function test_compareHausdorff(n::Int)
+  @assert n>0
+  #simple debug example
+  S1 = "........((((...))))."
+  S2 = ".......((((...)))).."
+  
+  B1 = RNA_2D.dotBracketToBPSet(S1)
+  B2 = RNA_2D.dotBracketToBPSet(S2)
+  
+  @test RNA_2D.compareHausdorff(B1,B2) == 1
+  
+  for i = 1:n
+    a = RNA_2D.dotBracketToBPSet(randomDotBracketPlus())
+    b = RNA_2D.dotBracketToBPSet(randomDotBracketPlus())
+    RNA_2D.compareHausdorff(a,b)
+  end
+end
+
+
 function test_all()
   test_testDotBracket()
   test_randomDotBracket(10000)
   test_compareBPSet(1000)
+  test_compareHausdorff(100)
+  test_init_structure()
   println("All unit tests succeeded")
   return true
 end

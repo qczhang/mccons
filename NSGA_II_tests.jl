@@ -18,8 +18,8 @@ using Base.Test
 #BEGIN test_solution
 function test_solution()
   #tests constuctors for solution
-  s1 = solution([2], [4])
-  s2 = solution([2], x->map(y->2*y, x))
+  s1 = NSGA_II.solution([2], [4])
+  s2 = NSGA_II.solution([2], x->map(y->2*y, x))
   @test s1 == s2
 end
 #END
@@ -55,7 +55,7 @@ function test_nonDominatedCompare(n::Int, fitnessSize::Int)
   
   for i in tests
     for j in tests
-      v = nonDominatedCompare(i,j)
+      v = NSGA_II.nonDominatedCompare(i,j)
       #dominating
       if v == 1
 	@test all_compare(i,j, >=) == true
@@ -88,18 +88,18 @@ end
 function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #unit test
   #exhaustive
-  pop = population()
+  pop = NSGA_II.population()
   for i =  1: cardinality
-    push!(pop.solutions, solution([42],randomFitnessArray(fitnessLen)))
+    push!(pop.solutions, NSGA_II.solution([42],randomFitnessArray(fitnessLen)))
   end
 
-  sorts = nonDominatedSort(pop)
+  sorts = NSGA_II.nonDominatedSort(pop)
   #no domination within the same front
   for i = 1:length(sorts)
     ar = sorts[i]
     for j in ar
       for k in ar
-	@test nonDominatedCompare(pop.solutions[j].fitness, pop.solutions[k].fitness) == 0
+	@test NSGA_II.nonDominatedCompare(pop.solutions[j].fitness, pop.solutions[k].fitness) == 0
       end
     end
   end
@@ -111,7 +111,7 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
       b = sorts[i+1]
       for j in a
 	for k in b
-	  @test nonDominatedCompare(pop.solutions[j].fitness, pop.solutions[k].fitness) in (0,1)
+	  @test NSGA_II.nonDominatedCompare(pop.solutions[j].fitness, pop.solutions[k].fitness) in (0,1)
 	end
       end
     end
@@ -124,17 +124,17 @@ end
 
 
 #BEGIN test_evaluateAgainstOthers
-function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_method = nonDominatedCompare)
+function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_method = NSGA_II.nonDominatedCompare)
   #exhaustive unit test
   #generate the population
-  pop = population()
+  pop = NSGA_II.population()
   for i =  1: cardinality
-    push!(pop.solutions, solution([42],randomFitnessArray(fitnessLen)))
+    push!(pop.solutions, NSGA_II.solution([42],randomFitnessArray(fitnessLen)))
   end
   #evaluate all solutions
   result = {}
   for i = 1:cardinality
-    push!(result, evaluateAgainstOthers(pop, i, compare_method))
+    push!(result, NSGA_II.evaluateAgainstOthers(pop, i, compare_method))
   end
   #verify validity
   for i = 1:cardinality
@@ -177,7 +177,7 @@ function test_fastDelete(repet::Int, size::Int)
   for i= 1:repet
     values = generatePosRandInt(size)
     deletion = generatePosRandInt(size)
-    @test slowDelete(values, deletion) == fastDelete(values, deletion)
+    @test slowDelete(values, deletion) == NSGA_II.fastDelete(values, deletion)
   end
   return true
 end
@@ -187,12 +187,12 @@ end
 
 #BEGIN generatePop
 function generatePop(size::Int, fitnessLen::Int)
-  p = solution[]
+  p = NSGA_II.solution[]
   for i = 1:size
-    push!(p, solution({42}, randomFitnessArray(fitnessLen)))
+    push!(p, NSGA_II.solution({42}, randomFitnessArray(fitnessLen)))
   end
   
-  return population(p)
+  return NSGA_II.population(p)
 end
 #END
 
@@ -201,21 +201,21 @@ end
 #BEGIN test_crowdingDistance
 function test_crowdingDistance()
   #create population
-  p = solution[]
-  push!(p, solution({42}, [0,5]))
-  push!(p, solution({42}, [0,5]))
-  push!(p, solution({42}, [2,2]))
-  push!(p, solution({42}, [3,1]))
-  push!(p, solution({42}, [3,1]))
-  push!(p, solution({42}, [3,1]))
-  push!(p, solution({42}, [5,0]))
-  pop = population(p)
+  p = NSGA_II.solution[]
+  push!(p, NSGA_II.solution({42}, [0,5]))
+  push!(p, NSGA_II.solution({42}, [0,5]))
+  push!(p, NSGA_II.solution({42}, [2,2]))
+  push!(p, NSGA_II.solution({42}, [3,1]))
+  push!(p, NSGA_II.solution({42}, [3,1]))
+  push!(p, NSGA_II.solution({42}, [3,1]))
+  push!(p, NSGA_II.solution({42}, [5,0]))
+  pop = NSGA_II.population(p)
   
   #sort into fronts
-  fronts = nonDominatedSort(pop)
+  fronts = NSGA_II.nonDominatedSort(pop)
   
   #calculate crowding distances
-  crowdingDistance(pop, fronts[1], 1, true)
+  NSGA_II.crowdingDistance(pop, fronts[1], 1, true)
   
   #test against manually calculated values
   @test pop.distances[[0,5]] == (1,Inf)
@@ -238,10 +238,10 @@ end
 #BEGIN test_all
 function test_all()
   #exhaustive
-  test_nonDominatedCompare(1000,3)
-  test_evaluateAgainstOthers(1000,5)
-  test_fastDelete(2000,2000)
-  test_nonDominatedSort(2000, 5)
+  test_nonDominatedCompare(500,3)
+  test_evaluateAgainstOthers(500,5)
+  test_fastDelete(1000,1000)
+  test_nonDominatedSort(500, 3)
   test_crowdingDistance()
   println("All unit tests succeeded")
   
