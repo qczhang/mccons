@@ -307,7 +307,7 @@ end
 function generateOffsprings(parents::Vector{solution}, 
                             probabilityOfCrossover::FloatingPoint,
                             probabilityOfMutation::FloatingPoint,
-                            evaluationFunction,
+                            evaluationFunction::Function,
                             alleles,
                             mutationOperator = uniformMutate,
                             mutationStrength = 0.05,

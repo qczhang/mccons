@@ -3,61 +3,34 @@
 
 
 
-type nonterminal
-  #uppercase char for terminals
-  v::Char
-  function nonterminal(v::Char)
-    @assert int(v) in 65:90
-    self = new(v)
-  end
-end
 
-
-
-type terminal
-  #lowercase char for terminals
-  v::Char
-  function terminal(v::Char)
-    @assert int(v) in 97:122
-    self = new(v)
-  end
-end
-
-
-
-typealias nonterminals Set{nonterminal}
-
-
-
-typealias terminals Set{terminal}
-
-
-
-function separateIntoSymbols(s::String)
-  term = terminals()
-  nonterm = nonterminals()
+function separateIntoSymbols(s::String, nonterminals::Set{Char}, terminals::Set{Char})
+  result_terminals = Set{Char}()
+  result_nonterminals = Set{Char}()
+  
   for i in s
-    unicodeVal = int(i)
-    if unicodeVal in 65:90
-      push!(nonterm, nonterminal(i))
-    elseif unicodeVal in 97:122
-      push!(term, terminal(i))
+  
+    if i in nonterminals 
+      push!(result_nonterminals, i)
+    elseif i in terminals
+      push!(result_terminals, i)
     else
-      throw(DomainError())
+      error("symbol $i is not in the grammar")
     end
+  
   end
   
-  return (term, nonterm)
+  return (result_nonterminals, result_terminals)
 end
 
 
 
 
 type productionRule
-  input::nonterminal
+  input::Char
   output::Vector
   
-  function productionRule{S<:String}(input::nonterminal, output::Vector{S})
+  function productionRule{S<:String}(input::Char, output::Vector{S})
     self = new(input, output)
   end
   
@@ -65,55 +38,53 @@ end
 
 
 
-function prod(p::productionRule, n::nonterminal)
-  println(p)
-#   println(n)
-  if n == p.input
+function prod(p::productionRule, s::Char)
+  if s == p.input
     return p.output
   else
-    throw(DomainError())
+    error("this rule does not take $s as argument")
   end
 end
 
 
 
 function test_productionRule()
-  p = productionRule(nonterminal('S'), ["A", "a"])
+  p = productionRule('S', ["A", "a"])
 end
 
 
 #the grammar must not contain epsilon productions
 
 type grammar
-  nonterm :: nonterminals
-  term :: terminals
-  start :: nonterminal
-  productions ::Set{productionRule}
+  nonterminals::Set{Char}
+  terminals::Set{Char}
+  start::Char
+  productionRules ::Set{productionRule}
   
-  function grammar(syms::nonterminals, term::terminals, start::nonterminal, productions::Vector{productionRule})
+  function grammar(nonterminals::Set{Char}, terminals::Set{Char}, start::Char, productionRules::Set{productionRule})
     #the intersection of terminal and non terminal symbols must be empty
     @assert intersect(nonterm, term) = Set()
+    for i in nonterminals
+      @assert int(i) in 65:90
+    end
     
     #assert terminal and non terminal symbols used in the production rules make sense
-    nonterms = Set()
-    terms = Set()
-    for i in productions
-      inp = Set()
-      outp = Set()
-      for j in i.input
-	push!(inp, collect(j))
-      end
+    prod_nonterms = Set{Char}()
+    prod_terms = Set{Char}()
+    for rule in productionRules
+      #push the nonterminal acting as input
+      push!(prod_nonterms, rule.input)
       
-      for j in i.output
-	push!(outp, collect(j))
+      #separate the outputs using separateIntoSymbols, will throw an error if a symbol is not either in terminals or nonterminals
+      for str in rule.output
+	separateIntoSymbols(str, nonterminals, terminals)
       end
-      
-      nonterms = union(nonterms, inp)
-      terms = union(terms, outp)
     end
-    @assert union(intersect(nonterms, nonterm), intersect(terms, term))
     
-    self = new(nonterm, term, start, productions)
+    #asser that at least one rule uses the start symbol
+    @assert start in prod_nonterms
+    
+    self = new(nonterminals, terminals, start, productionRules)
   end
 end
     
