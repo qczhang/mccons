@@ -17,7 +17,7 @@ function callFlashFold(sequence::String, ft::Int)
   data = map(x->split(x), data)
   data2 = (String, FloatingPoint)[]
   for x in data
-    push!(data2, (convert(String, x[1]), float(x[2])))
+    push!(data2, ((convert(String, x[1])), float(x[2])))
   end
   return data2
 end
@@ -120,9 +120,9 @@ yeastTRNAs = {
 function generateAlleles(RNAs::Vector{String}, n::Int)
   @assert n > 0
   #we use flash fold to generate n suboptimals per RNA
-  alleles = Vector[]
+  alleles = Vector{(String, FloatingPoint)}[]
   for i in RNAs
-    push!(alleles, map(x->x[1], callFlashFold(i, n)))
+    push!(alleles, callFlashFold(i, n))
   end
   return alleles
 end
@@ -130,16 +130,19 @@ end
 
 
 function foldYeasttRNAs(n::Int)
-  k = map(x->yeastTRNAs[x], collect(keys(yeastTRNAs)))
-  return generateAlleles(k,n)
+  vals = Vector{RNA_2D.structure}[]
+  k = collect(keys(yeastTRNAs))
+  
+  for i = 1:length(k)
+    folded = callFlashFold(yeastTRNAs[k[i]], n)
+    folds = map(x -> RNA_2D.structure(i, x[1], x[2]), folded)
+    push!(vals, folds)
+  end
+  return vals
 end
 
 
-
-
 ALLELES = foldYeasttRNAs(50)
-
-
 
 p = NSGA_II.initializePopulation(ALLELES, evalDistance, 50)
 

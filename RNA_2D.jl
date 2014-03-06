@@ -34,15 +34,17 @@ immutable structure
   base_pair_set::Vector{(Int,Int)}
   energy::FloatingPoint
   
-  function structure(family, dotBracketInput::String)
+  function structure{T <: String}(family, dotBracketInput::T)
     @assert testDotBracket(dotBracketInput) == true
+    dotBracketInput = convert(String, dotBracketInput)
     mountain = dotBracketToMountain(dotBracketInput)
     base_pair_set = dotBracketToBPSet(dotBracketInput)
     self = new(family, dotBracketInput, mountain, base_pair_set, -Inf)
   end
   
-  function structure(family, dotBracketInput::String, energy::FloatingPoint)
+  function structure{T <: String}(family, dotBracketInput::T, energy::FloatingPoint)
     @assert testDotBracket(dotBracketInput) == true
+    dotBracketInput = convert(String, dotBracketInput)
     mountain = dotBracketToMountain(dotBracketInput)
     base_pair_set = dotBracketToBPSet(dotBracketInput)
     self = new(family, dotBracketInput, mountain, base_pair_set, energy)

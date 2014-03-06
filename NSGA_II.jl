@@ -601,7 +601,7 @@ end
 #END
 
 
-function initializePopulation(alleles::Vector{Vector}, evaluationFunction::Function, n::Int)
+function initializePopulation{T}(alleles::Vector{Vector{T}}, evaluationFunction::Function, n::Int)
   @assert n>0
   result = population()
   i = 1
