@@ -1,8 +1,5 @@
 #MCCONS rework
 
-#Since we work with modules in the local path
-#add the local path to the load_path
-push!(LOAD_PATH, chomp(readall(`pwd`)))
 
 
 #get NSGA-II and RNA2D 
@@ -18,11 +15,13 @@ function callFlashFold(sequence::String, ft::Int)
     data = data[1:end-1]
   end
   data = map(x->split(x), data)
-  data = map(x->(x[1], float(x[2])), data)
-  return data
+  data2 = (String, FloatingPoint)[]
+  for x in data
+    push!(data2, (convert(String, x[1]), float(x[2])))
+  end
+  return data2
 end
 #END callFlashFold
-
 
 
 
@@ -39,22 +38,31 @@ function pairwiseAll(f::Function, v::Vector)
 end
 
 
+
 #BEGIN evaluation functions
-function evalBPSetDistance(v::Vector{RNA_2D.structure})
+function evalBPSetDistance(v::Vector)
   v2 = map(x->x.base_pair_set, v)
   reduce(+, pairwiseAll(RNA_2D.compareBPSet, v2))
 end
 
 
-function evalMountainDistance(v::Vector{RNA_2D.structure})
+
+function evalMountainDistance(v::Vector)
   v2 = map(x->x.mountain, v)
   reduce(+, pairwiseAll(RNA_2D.compareMountainDistance, v2))
 end
 
 
-function evalHausdorff(v::Vector{RNA_2D.structure})
+
+function evalHausdorff(v::Vector)
   v2 = map(x->x.base_pair_set, v)
   reduce(+, pairwiseAll(RNA_2D.compareHausdorff, v2))
+end
+
+
+
+function evalDistance(v::Vector)
+  return [evalBPSetDistance(v), evalMountainDistance(v), evalHausdorff(v)]
 end
 #END
 
@@ -109,12 +117,12 @@ yeastTRNAs = {
 
 
 
-function generateAlleles(RNAs::Vector, n::Int)
+function generateAlleles(RNAs::Vector{String}, n::Int)
   @assert n > 0
   #we use flash fold to generate n suboptimals per RNA
   alleles = Vector[]
   for i in RNAs
-    push!(alleles, callFlashFold(i, n))
+    push!(alleles, map(x->x[1], callFlashFold(i, n)))
   end
   return alleles
 end
@@ -123,16 +131,17 @@ end
 
 function foldYeasttRNAs(n::Int)
   k = map(x->yeastTRNAs[x], collect(keys(yeastTRNAs)))
-  return collect(zip(k, generateAlleles(k,n)))
+  return generateAlleles(k,n)
 end
 
 
 
 
+ALLELES = foldYeasttRNAs(50)
 
 
 
-
+p = NSGA_II.initializePopulation(ALLELES, evalDistance, 50)
 
 
 

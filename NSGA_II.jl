@@ -32,7 +32,7 @@ immutable solution
     self = new(units, fitnessValues)
   end
   
-  function solution(units::Vector, fitnessFunction)
+  function solution(units::Vector, fitnessFunction::Function)
     @assert length(units) != 0
     self = new(units, fitnessFunction(units))
   end
@@ -601,7 +601,21 @@ end
 #END
 
 
-
+function initializePopulation(alleles::Vector{Vector}, evaluationFunction::Function, n::Int)
+  @assert n>0
+  result = population()
+  i = 1
+  while i < n
+    units = {}
+    for i in alleles
+      push!(units, i[rand(1:length(i))])
+    end
+    sol = solution(units, evaluationFunction)
+    push!(result, sol)
+    i+=1
+  end
+  return result
+end
 #END
 end
 
