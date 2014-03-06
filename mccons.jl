@@ -64,6 +64,12 @@ end
 function evalDistance(v::Vector)
   return [evalBPSetDistance(v), evalHausdorff(v)]
 end
+
+function evalDistanceEqualLength(v::Vector)
+  #uses the mountain distance in addition to base pair set and hausdorff 
+  return [evalBPSetDistance(v), evalHausdorff(v), evalMountainDistance(v)]
+end
+
 #END
 
 
@@ -154,7 +160,7 @@ for i = 1:length(s)-1
   chosen += length(s[i])
 end
 
-NSGA_II.lastFrontSelection(p, s[end], i, ceil(length(p.solutions)/2) - chosen)
+NSGA_II.lastFrontSelection(p, s[end], length(s), int(ceil(length(p.solutions)/2) - chosen))
 
 
 
