@@ -1,10 +1,16 @@
 module NSGA_II
 
 #BEGIN readme
-#Simple implementation of the NSGA-II multiobjective
-#genetic algorithm.
+#Implementation of the NSGA-II multiobjective
+#genetic algorithm as described by:
 
-#Based on "Revisiting the NSGA-II crowding-distance computation"
+# Revisiting the NSGA-II crowding-distance computation
+# Félix-Antoine Fortin
+# Marc Parizeau
+# Université Laval, Québec, PQ, Canada
+# GECCO '13 Proceeding of the fifteenth annual conference on Genetic and evolutionary computation conference
+# Pages 623-630 
+
 #END
 
 
@@ -208,7 +214,7 @@ end
 
 
 #BEGIN lastFrontSelection
-function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vector{Int}, lastFrontId::Int, k::Int)
+function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vector{Int}, lastFrontID::Int, k::Int)
   @assert 0 < k <= length(lastFrontIndices)
 
   #map {fitness => crowding distance}
@@ -252,6 +258,9 @@ function lastFrontSelection(wholePopulation::population, lastFrontIndices::Vecto
   
   #get the new crowding distance values for the last front and push it to the whole population
   crowdingDistance(wholePopulation, chosenOnes, lastFrontID, true)
+  
+  #return the indices of the chosen solutions on the last front
+  return chosenOnes
 end
 #END
 
@@ -602,20 +611,23 @@ end
 
 
 function initializePopulation{T}(alleles::Vector{Vector{T}}, evaluationFunction::Function, n::Int)
+  #
   @assert n>0
   result = population()
-  i = 1
-  while i < n
+  index = 1
+  while index <= n
     units = {}
     for i in alleles
       push!(units, i[rand(1:length(i))])
     end
     sol = solution(units, evaluationFunction)
-    push!(result, sol)
-    i+=1
+    push!(result.solutions, sol)
+    index+=1
   end
   return result
 end
+
 #END
+
 end
 

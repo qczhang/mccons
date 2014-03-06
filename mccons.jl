@@ -62,7 +62,7 @@ end
 
 
 function evalDistance(v::Vector)
-  return [evalBPSetDistance(v), evalMountainDistance(v), evalHausdorff(v)]
+  return [evalBPSetDistance(v), evalHausdorff(v)]
 end
 #END
 
@@ -116,7 +116,6 @@ yeastTRNAs = {
 
 
 
-
 function generateAlleles(RNAs::Vector{String}, n::Int)
   @assert n > 0
   #we use flash fold to generate n suboptimals per RNA
@@ -145,6 +144,17 @@ end
 ALLELES = foldYeasttRNAs(50)
 
 p = NSGA_II.initializePopulation(ALLELES, evalDistance, 50)
+
+
+s = NSGA_II.nonDominatedSort(p)
+chosen = 0
+
+for i = 1:length(s)-1
+  NSGA_II.crowdingDistance(p, s[i], i, true)
+  chosen += length(s[i])
+end
+
+NSGA_II.lastFrontSelection(p, s[end], i, ceil(length(p.solutions)/2) - chosen)
 
 
 
