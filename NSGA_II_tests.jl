@@ -1,19 +1,83 @@
 
 
+
+#------------------------------------------------------------------------------
 #BEGIN readme
+
+
+
 #Unit tests for the NSGA_II module
-#END
 
 
 
+#END   readme
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
 #BEGIN imports
+
+
+
 require("NSGA_II")
 using Base.Test
+
+
+
+#END   imports
+#------------------------------------------------------------------------------
+
+
+
+
+#------------------------------------------------------------------------------
+#BEGIN unit tests
+
+
+
+#BEGIN test_nonDominatedSort
+function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
+  #verify property of non dominated sorting results
+  pop = NSGA_II.population()
+  for i =  1: cardinality
+    push!(pop.solutions, NSGA_II.solution([42],randomFitnessArray(fitnessLen)))
+  end
+
+  sorts = NSGA_II.nonDominatedSort(pop)
+  #no domination within the same front
+  for i = 1:length(sorts)
+    ar = sorts[i]
+    for j in ar
+      for k in ar
+        fit1 = pop.solutions[j].fitness
+        fit2 = pop.solutions[k].fitness
+        @test NSGA_II.nonDominatedCompare(fit1, fit2) == 0
+      end
+    end
+  end
+  
+  #domination or equivalence of all for greater front
+  #all in 1 dominate all in 2
+  if(length(sorts)>1)
+    for i = 1:length(sorts)-1
+      a = sorts[i]
+      b = sorts[i+1]
+      for j in a
+  for k in b
+    fit1 = pop.solutions[j].fitness
+    fit2 = pop.solutions[k].fitness
+    @test NSGA_II.nonDominatedCompare(fit1, fit2) in (0,1)
+  end
+      end
+    end
+  end
+    
+  return true
+end
 #END
 
 
-
-#BEGIN unit tests
 
 #BEGIN test_solution
 function test_solution()
@@ -24,13 +88,15 @@ function test_solution()
 end
 #END
 
+
+
 #BEGIN test_population
 function test_population()
   #tests constructors for population
   
 end
-
 #END
+
 
 
 #BEGIN test_nonDominatedCompare
@@ -58,20 +124,20 @@ function test_nonDominatedCompare(n::Int, fitnessSize::Int)
       v = NSGA_II.nonDominatedCompare(i,j)
       #dominating
       if v == 1
-	@test all_compare(i,j, >=) == true
+        @test all_compare(i,j, >=) == true
       #dominated
       elseif v == -1
-	@test all_compare(i,j, <=) == true
+        @test all_compare(i,j, <=) == true
       #non dominated and non dominating
       elseif v == 0
-	@test all_compare(i,j, >) == false
-	@test all_compare(i,j, <) == false
+        @test all_compare(i,j, >) == false
+        @test all_compare(i,j, <) == false
       end
     end
   end
   return true
 end
-#END test_nonDominatedCompare
+#END
 
 
 
@@ -80,52 +146,20 @@ function randomFitnessArray(fitnessLen::Int)
   #helper
   return rand(1:10000, fitnessLen)
 end
-#END randomFitnessArray
+#END
 
 
 
-#BEGIN test_nonDominatedSort
-function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
-  #unit test
-  #exhaustive
-  pop = NSGA_II.population()
-  for i =  1: cardinality
-    push!(pop.solutions, NSGA_II.solution([42],randomFitnessArray(fitnessLen)))
-  end
 
-  sorts = NSGA_II.nonDominatedSort(pop)
-  #no domination within the same front
-  for i = 1:length(sorts)
-    ar = sorts[i]
-    for j in ar
-      for k in ar
-	@test NSGA_II.nonDominatedCompare(pop.solutions[j].fitness, pop.solutions[k].fitness) == 0
-      end
-    end
-  end
-  #domination or equivalence of all for greater front
-  #all in 1 dominate all in 2
-  if(length(sorts)>1)
-    for i = 1:length(sorts)-1
-      a = sorts[i]
-      b = sorts[i+1]
-      for j in a
-	for k in b
-	  @test NSGA_II.nonDominatedCompare(pop.solutions[j].fitness, pop.solutions[k].fitness) in (0,1)
-	end
-      end
-    end
-  end
-    
-  return true
-end
-#END test_nonDominatedSort
 
 
 
 #BEGIN test_evaluateAgainstOthers
-function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_method = NSGA_II.nonDominatedCompare)
-  #exhaustive unit test
+function test_evaluateAgainstOthers(cardinality::Int, 
+                                    fitnessLen::Int, 
+                                    compare_method = NSGA_II.nonDominatedCompare)
+  #test evaluation of individual against everyone else in the population (helper)
+  
   #generate the population
   pop = NSGA_II.population()
   for i =  1: cardinality
@@ -140,23 +174,16 @@ function test_evaluateAgainstOthers(cardinality::Int, fitnessLen::Int, compare_m
   for i = 1:cardinality
     if !(isempty(result[i][3]))
       for j in result[i][3]
-	@test compare_method(pop.solutions[result[i][1]].fitness, pop.solutions[j].fitness) == -1
+        a = pop.solutions[result[i][1]].fitness
+        b = pop.solutions[j].fitness
+        @test compare_method(a, b) == -1
       end
     end
   end
   
   return true
 end
-#END test_evaluateAgainstOthers
-
-
-
-#BEGIN slowDelete
-function slowDelete(values::Vector, deletion::Vector)
-  #helper
-  return filter(x->!(x in deletion), values)
-end 
-#END slowDelete
+#END
 
 
 
@@ -167,12 +194,18 @@ function generatePosRandInt(n::Int, minInt = 1, maxInt = 10000)
   @assert n > 0
   return sort(rand(minInt:maxInt, n))
 end
-#END generatePosRandInt
+#END
 
 
 
 #BEGIN test_fastDelete
 function test_fastDelete(repet::Int, size::Int)
+
+  function slowDelete(values::Vector, deletion::Vector)
+    #helper, used to compare with fastDelete
+    return filter(x->!(x in deletion), values)
+  end
+  
   #unit test, exhaustive
   for i= 1:repet
     values = generatePosRandInt(size)
@@ -181,7 +214,7 @@ function test_fastDelete(repet::Int, size::Int)
   end
   return true
 end
-#END test_fastDelete
+#END
 
 
 
@@ -252,6 +285,6 @@ end
 test_all()
 
 
-#END
-
+#END   unit tests
+#------------------------------------------------------------------------------
 

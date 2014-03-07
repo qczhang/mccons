@@ -47,7 +47,7 @@ require("geneticAlgorithmOperators")
 
 
 immutable solution
-  #unit, individual, basic block of the genetic algorithm
+  #unit, individual, basic block of the solution
   units::Vector
   fitness::Vector
   
@@ -55,13 +55,13 @@ immutable solution
     #fitness value is precomputed
     @assert length(units) != 0
     @assert length(fitnessValues) != 0
-    self = new(units, fitnessValues)
+    new(units, fitnessValues)
   end
   
   function solution(units::Vector, fitnessFunction::Function)
-    @assert length(units) != 0
     #fitness value is to be computed
-    self = new(units, fitnessFunction(units))
+    @assert length(units) != 0
+    new(units, fitnessFunction(units))
   end
 end
 
@@ -159,19 +159,19 @@ end
 #BEGIN addToHallOfFame
 function addToHallOfFame(wholePopulation::population, 
                          firstFrontIndices::Vector{Int}, 
-                         bestPop::hallOfFame)
+                         HallOfFame::hallOfFame)
   #solutions from first front
   firstFront = wholePopulation.solutions[firstFrontIndices]
   
   #add them to the hall of fame
   for i in firstFront
-    push!(bestPop.solutions, pop[i])
+    push!(HallOfFame.solutions, pop[i])
   end
   
   #acquire the domination values
   values = (Int, Int, Array{Int,1})[]
-  for i=1:length(bestPop.solutions)
-    push!(values, evaluateAgainstOthers(bestPop, i, nonDominatedCompare))
+  for i=1:length(HallOfFame.solutions)
+    push!(values, evaluateAgainstOthers(HallOfFame, i, nonDominatedCompare))
   end
   
   #get first front solutions
@@ -181,7 +181,7 @@ function addToHallOfFame(wholePopulation::population,
   firstFrontIndices = map(x->x[1], firstFront)
   
   #substitute in hall of fame
-  bestPop.individuals = bestPop[firstFrontIndices]
+  HallOfFame.individuals = HallOfFame[firstFrontIndices]
 end
 #END
 
@@ -312,7 +312,12 @@ end
 
 #BEGIN UFTournSelection
 function UFTournSelection(pop::population)
-  #unique fitness based tournament selection
+  #Unique Fitness based Tournament Selection
+  
+  #select across entire range of fitnesses to avoid 
+  #bias by reoccuring fitnesses
+  
+  #size of the population
   cardinality = length(pop.solutions)
   result = solution[]
   
@@ -332,8 +337,8 @@ function UFTournSelection(pop::population)
   end
   
   #solutions selected to parent new population
-  chosen = Vector[]
-  
+  \fiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiixxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx vals
+  vals = 
   while length(chosen) != cardinality
     k = min((2*(cardinality - length(chosen))), length(fitnessToIndex))
     
@@ -341,17 +346,19 @@ function UFTournSelection(pop::population)
     candidateFitnesses = SAMPLE(fitnessKeys, k)
     vals = map(x->pop.distances[x], candidateFitnesses)
     
-    #push the chosen fitnesses in the chosen array
-    for i in Range(1, 2, k)
-      push!(chosen, candidateFitnesses[i + crowdedCompare(vals[i], vals[i+1])])
-    end
+    #Choose n fittest out of 2n
+    #by comparing pairs of neighbors
     
   end
   
-  #select a random 
-  S = map(x -> fitnessToIndex[x][rand(1 : length(fitnessToIndex[x]))], chosen)
-
-  return S
+  
+  chosen = Vector[]
+  for i in Range(1, 2, k)
+    push!(chosen, candidateFitnesses[i + crowdedCompare(vals[i], vals[i+1])])
+  end
+    
+  #randomly choose a solution from the solutions sharing the fitness
+  return map(x -> fitnessToIndex[x][rand(1 : length(fitnessToIndex[x]))], chosen)
 end
 #END
 
@@ -394,41 +401,48 @@ function generateOffsprings(parents::Vector{solution},
   children = population()
   popSize = length(parents)
   
-  #choice vectors
-  mut   = map(x->x <= probabilityOfMutation,  rand(length(parents)))
-  cross = map(x->x <= probabilityOfCrossover, rand(length(parents)))
+  #deciding who is mutating and having crossovers
+  isMutated   = map(x->x <= probabilityOfMutation,  rand(length(parents)))
+  hasCrossover= map(x->x <= probabilityOfCrossover, rand(length(parents)))
   
-  #zip them together
-  choices = zip(cross, mut)
+  evolutionaryEvents = zip(isMutated, hasCrossover)
   
-  for i = 1:popSize  
+  for i = 1:popSize
+  \fiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiixxxxxxxxxxxxxxxxxxxxxxxxxxxxxx do it with one push
     #no change implies no re-evaluation
-    if choices[i] == [false, false]
+    if evolutionaryEvents[i] == [false, false]
       push!(children.solutions, parents[i])
       
     else
       #else proceed through operators and evaluate new solution
-      newUnits = parents[i].units
       
-      #crossover operation
-      if choices[i][1] == true
-        #find second parent to mix with
+      #fitness function will evaluate the units
+      newUnits = deepcopy(parents[i].units)
+      
+      #recombination (crossover)
+      if evolutionaryEvents[i][1] == true
+        #randomly choose second parent
         secondParentIndex = rand(1:(popSize-1))
         
+        #leave a gap to not select same parent
         if secondParentIndex >= i
           secondParentIndex += 1
         end
         
-        newUnits = halfUniformCrossover(newUnits, parents[secondParentIndex].units)
+        #combine two parents units (on which the fitness is based)
+        newUnits = crossoverOperator(newUnits, parents[secondParentIndex].units)
       end
     
-      #mutate operation
-      if choices[i][2] == true
+      #mutation
+      if evolutionaryEvents[i][2] == true
         newUnits = mutationOperator(newUnits, mutationStrength, alleles)
       end
       
+      
       push!(children.solutions, solution(newUnits, evaluationFunction))
     end
+    
+    newSolution = solution(newUnits, fitness)
   end
   
   return children
@@ -440,28 +454,35 @@ end
 function NSGA_II_main{T}(alleles::Vector{Vector{T}},
                          fitnessFunction::Function,
                          populationSize::Int,
-                         iterations::Int)
+                         iterations::Int,
+                         probabilityOfCrossover::FloatingPoint,
+                         probabilityOfMutation::FloatingPoint)
   @assert populationSize > 0
   @assert iterations > 0
   #main loop of the NSGA-II algorithm
   #executes selection -> breeding until number of iterations is reached
   
+  HallOfFame = hallOfFame()
+  
   #initialize
   P1 = initializePopulation(alleles, fitnessFunction, n)
   Q1 = initializePopulation(alleles, fitnessFunction, n)
+  
+  #merge two initial parents
   Pt = population(vcat(P1.solutions, Q1.solutions))
+  
   #iterate selection -> breeding
   for i = 1:iterations
-    #merge previous and actual population
-    
     
     #sort into non dominated fronts
     F = nonDominatedSort(Pt)
     
+    addToHallOfFame(Pt, F[1], HallOfFame)
+    
     #get the last front indices
     lastFront = F[end]
     
-    #
+    #separate last front from rest
     F = F[1:end-1]
     Pnext = population()
     
@@ -471,24 +492,34 @@ function NSGA_II_main{T}(alleles::Vector{Vector{T}},
       crowdingDistance(Pt, front, j, true)
     end
     
-    #solutions left to choose from the last front 
+    #------------------------
+    #how many solutions left to choose from the last front 
     toChoose = length(Pt.solutions) - length(reduce(vcat, F))
     
-    #perform last front selection
+    #perform last front selection (side effect: add crowding distance for last front fitnesses)
     indicesLastFront = lastFrontSelection(Pt, lastFront, length(F) + 1, toChoose)
     
-    #concatenate the list of all individuals kept by the selection
+    #-------------------------
+    
+    #concatenate the list of all individuals to be parents
     chosenIndices = vcat(reduce(vcat, F), indicesLastFront)
     
-    #for garbage collection
-    \toooooooooooooooooooooooooooooooooooooooooooooooooooodoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+    
     
     #create the Pt+1 population 
     Pt2 = population(Pt.solutions[chosenIndices], Pt.distances)
     
-    #
     
+    #select based on crowding comparison
+    Pt2prime = UFTournSelection(Pt2)
     
+    #generate offsprings
+    Pt = generateOffsprings(Pt2prime, probabilityOfCrossover, probabilityOfMutation,  )
+    
+    #merge earlier and actual pr
+  end
+  
+  return HallOfFame
 end
 #END
 
