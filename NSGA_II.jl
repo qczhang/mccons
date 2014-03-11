@@ -46,19 +46,19 @@ require("geneticAlgorithmOperators")
 
 
 
-immutable solution
+immutable individual
   #unit, individual, basic block of the solution
   units::Vector
   fitness::Vector
   
-  function solution(units::Vector, fitnessValues::Vector)
+  function individual(units::Vector, fitnessValues::Vector)
     #fitness value is precomputed
     @assert length(units) != 0
     @assert length(fitnessValues) != 0
     new(units, fitnessValues)
   end
   
-  function solution(units::Vector, fitnessFunction::Function)
+  function individual(units::Vector, fitnessFunction::Function)
     #fitness value is to be computed
     @assert length(units) != 0
     new(units, fitnessFunction(units))
@@ -68,30 +68,30 @@ end
 
 
 type population
-  #the compound of all solutions
+  #the compound of all individuals
   #includes a mapping of fitness values to crowding distance
   
-  solutions::Vector{solution}
+  individuals::Vector{individual}
   distances::Dict{Vector, (Int, FloatingPoint)}
   
   function population()
     #initialize empty
-    self = new(solution[], Dict{Vector, (Int, FloatingPoint)}())
+    self = new(individual[], Dict{Vector, (Int, FloatingPoint)}())
   end
   
-  function population(solutions::Vector{solution})
-    #initialize with solutions but no distances
-    @assert length(solutions) != 0
+  function population(individuals::Vector{individual})
+    #initialize with individuals but no distances
+    @assert length(individuals) != 0
     d = Dict{Vector, (Int, FloatingPoint)}()
-    self = new(solutions, d)
+    self = new(individuals, d)
   end
   
-  function population(solutions::Vector{solution}, 
+  function population(individuals::Vector{individual}, 
                       distances::Dict{Vector, (Int, FloatingPoint)})
-    #initialize with solutions and distances
-    @assert length(solutions) != 0
+    #initialize with individuals and distances
+    @assert length(individuals) != 0
     @assert length(distances) != 0
-    self = new(solutions, distances)
+    self = new(individuals, distances)
   end
 end
 
@@ -117,29 +117,30 @@ typealias hallOfFame population
 function nonDominatedSort(pop::population, 
                           comparisonMethod = nonDominatedCompare)
   #sort a population into m nondominating fronts (1 = best, m = worst)
-  #until at least half the original number of solutions are added
+  #until at least half the original number of individuals are added
   
-  #get number of solutions to keep
-  populationSize = length(pop.solutions)
-  cutoff = ceil(populationSize/2)
+  #get number of individuals to keep
+  populationSize = length(pop.individuals)
+  cutoff = populationSize/2
 
+  #evaluate all against all individuals,
   #values = (index, domination count, identity of dominators)
   values = (Int, Int, Vector{Int})[]
   for i = 1:populationSize
     push!(values, evaluateAgainstOthers(pop, i, comparisonMethod))
   end
   
-  #hold indices of the n solutions into m 
+  #hold indices of the n individuals into m 
   result = Vector{Int}[]
   
   while length(values) > cutoff
-    #find the nondominated solutions
+    #find the nondominated individuals
     front = filter(x->x[2] == 0, values)
     #get indices
     frontIndices = map(x->x[1], front)
     #add them to the current front
     push!(result, frontIndices)
-    #find the dominated solutions
+    #find the dominated individuals
     values = filter(x->x[2] != 0, values)
     #remove the latest front indices from the values
     for i = 1:length(values)
@@ -160,21 +161,21 @@ end
 function addToHallOfFame(wholePopulation::population, 
                          firstFrontIndices::Vector{Int}, 
                          HallOfFame::hallOfFame)
-  #solutions from first front
-  firstFront = wholePopulation.solutions[firstFrontIndices]
+  #individuals from first front
+  firstFront = wholePopulation.individuals[firstFrontIndices]
   
   #add them to the hall of fame
   for i in firstFront
-    push!(HallOfFame.solutions, pop[i])
+    push!(HallOfFame.individuals, pop[i])
   end
   
   #acquire the domination values
   values = (Int, Int, Array{Int,1})[]
-  for i=1:length(HallOfFame.solutions)
+  for i=1:length(HallOfFame.individuals)
     push!(values, evaluateAgainstOthers(HallOfFame, i, nonDominatedCompare))
   end
   
-  #get first front solutions
+  #get first front individuals
   firstFront = filter(x->x[2]==0, values)
   
   #get indices
@@ -196,7 +197,7 @@ function crowdingDistance(P::population,
   #the whole population for a certain front
   
   #fetch fitness from the front
-  front = map(x->x.fitness, P.solutions[frontIndices])
+  front = map(x->x.fitness, P.individuals[frontIndices])
   
   #map {fitness => crowdingDistance}
   fitnessToCrowding = Dict{Vector, (Int, FloatingPoint)}()
@@ -262,7 +263,7 @@ function lastFrontSelection(P::population,
   #map {fitness => indices}
   fitnessToIndex = Dict{Vector, Vector{Int}}()
   for i = 1:length(lastFrontIndices)
-    fitnessAtIndex = wholePopulation.solutions[lastFrontIndices[i]].fitness
+    fitnessAtIndex = wholePopulation.individuals[lastFrontIndices[i]].fitness
     value = get(fitnessToIndex, fitnessAtIndex, Int[])
     fitnessToIndex[fitnessAtIndex] = push!(value, lastFrontIndices[i])
   end
@@ -272,21 +273,21 @@ function lastFrontSelection(P::population,
                            by = k->fitnessToCrowding[k], 
                            rev = true)
   
-  #choose solutions by iterating through unique fitness list 
+  #choose individuals by iterating through unique fitness list 
   #in decreasing order of crowding distance
   chosenOnes = Int[]
   j = 1
   while length(chosenOnes) != k
     len = length(fitnessToIndex[fitnessByCrowding[j]])
     
-    if len > 1 #multiple solutions with same fitness
+    if len > 1 #multiple individuals with same fitness
       sample = rand(1:len)
       index = fitnessToIndex[fitnessByCrowding[j]][sample]
       push!(chosenOnes, index)
-      #solutions can be picked only once
+      #individuals can be picked only once
       deleteat!(fitnessToIndex[fitnessByCrowding[j]], sample)
     
-    else #single solution with this fitness
+    else #single individual with this fitness
       index = fitnessToIndex[fitnessByCrowding[j]][1]
       push!(chosenOnes, index)
       deleteat!(fitnessByCrowding, j)
@@ -303,7 +304,7 @@ function lastFrontSelection(P::population,
   #last front and push it to the whole population
   crowdingDistance(P, chosenOnes, lastFrontID, true)
   
-  #return the indices of the chosen solutions on the last front
+  #return the indices of the chosen individuals on the last front
   return chosenOnes
 end
 #END
@@ -318,14 +319,14 @@ function UFTournSelection(pop::population)
   #bias by reoccuring fitnesses
   
   #size of the population
-  cardinality = length(pop.solutions)
-  result = solution[]
+  cardinality = length(pop.individuals)
+  result = individual[]
   
   #map {fitness => indices}
   fitnessToIndex = Dict{Vector, Vector{Int}}()
   for i = 1:cardinality
-    value = get(fitnessToIndex, pop.solutions[i], Int[])
-    fitnessToIndex[pop.solutions[i]] = push!(value, i)
+    value = get(fitnessToIndex, pop.individuals[i], Int[])
+    fitnessToIndex[pop.individuals[i]] = push!(value, i)
   end
   
   #keys of map {fitness => indices}
@@ -336,7 +337,7 @@ function UFTournSelection(pop::population)
     return pop
   end
   
-  #solutions selected to parent new population
+  #individuals selected to parent new population
   \fiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiixxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx vals
   vals = 
   while length(chosen) != cardinality
@@ -357,7 +358,7 @@ function UFTournSelection(pop::population)
     push!(chosen, candidateFitnesses[i + crowdedCompare(vals[i], vals[i+1])])
   end
     
-  #randomly choose a solution from the solutions sharing the fitness
+  #randomly choose an individual from the individuals sharing the fitness
   return map(x -> fitnessToIndex[x][rand(1 : length(fitnessToIndex[x]))], chosen)
 end
 #END
@@ -377,8 +378,8 @@ function initializePopulation{T}(alleles::Vector{Vector{T}},
     for i in alleles
       push!(units, i[rand(1:length(i))])
     end
-    sol = solution(units, fitnessFunction)
-    push!(result.solutions, sol)
+    sol = individual(units, fitnessFunction)
+    push!(result.individuals, sol)
     index+=1
   end
   return result
@@ -388,7 +389,7 @@ end
 
 
 #BEGIN generateOffsprings
-function generateOffsprings(parents::Vector{solution}, 
+function generateOffsprings(parents::Vector{individual}, 
                             probabilityOfCrossover::FloatingPoint,
                             probabilityOfMutation::FloatingPoint,
                             evaluationFunction::Function,
@@ -411,10 +412,10 @@ function generateOffsprings(parents::Vector{solution},
   \fiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiixxxxxxxxxxxxxxxxxxxxxxxxxxxxxx do it with one push
     #no change implies no re-evaluation
     if evolutionaryEvents[i] == [false, false]
-      push!(children.solutions, parents[i])
+      push!(children.individuals, parents[i])
       
     else
-      #else proceed through operators and evaluate new solution
+      #else proceed through operators and evaluate new individual
       
       #fitness function will evaluate the units
       newUnits = deepcopy(parents[i].units)
@@ -439,10 +440,10 @@ function generateOffsprings(parents::Vector{solution},
       end
       
       
-      push!(children.solutions, solution(newUnits, evaluationFunction))
+      push!(children.individuals, individual(newUnits, evaluationFunction))
     end
     
-    newSolution = solution(newUnits, fitness)
+    newSolution = individual(newUnits, fitness)
   end
   
   return children
@@ -469,7 +470,7 @@ function NSGA_II_main{T}(alleles::Vector{Vector{T}},
   Q1 = initializePopulation(alleles, fitnessFunction, n)
   
   #merge two initial parents
-  Pt = population(vcat(P1.solutions, Q1.solutions))
+  Pt = population(vcat(P1.individuals, Q1.individuals))
   
   #iterate selection -> breeding
   for i = 1:iterations
@@ -493,8 +494,8 @@ function NSGA_II_main{T}(alleles::Vector{Vector{T}},
     end
     
     #------------------------
-    #how many solutions left to choose from the last front 
-    toChoose = length(Pt.solutions) - length(reduce(vcat, F))
+    #how many individuals left to choose from the last front 
+    toChoose = length(Pt.individuals) - length(reduce(vcat, F))
     
     #perform last front selection (side effect: add crowding distance for last front fitnesses)
     indicesLastFront = lastFrontSelection(Pt, lastFront, length(F) + 1, toChoose)
@@ -507,7 +508,7 @@ function NSGA_II_main{T}(alleles::Vector{Vector{T}},
     
     
     #create the Pt+1 population 
-    Pt2 = population(Pt.solutions[chosenIndices], Pt.distances)
+    Pt2 = population(Pt.individuals[chosenIndices], Pt.distances)
     
     
     #select based on crowding comparison
@@ -633,20 +634,20 @@ function evaluateAgainstOthers(pop::population,
   #compare object at index with rest of the vector
   count = 0
   dominatedby = Int[]
-  indFit = pop.solutions[index].fitness
+  indFit = pop.individuals[index].fitness
   #before the index
   if index!= 1
     for i = 1: (index-1)
-      if compare_method(pop.solutions[i].fitness, indFit) == 1
+      if compare_method(pop.individuals[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
     end
   end
   #after the index
-  if index != length(pop.solutions)
-    for i = (index+1):length(pop.solutions) #exclude the index
-      if compare_method(pop.solutions[i].fitness, indFit) == 1
+  if index != length(pop.individuals)
+    for i = (index+1):length(pop.individuals) #exclude the index
+      if compare_method(pop.individuals[i].fitness, indFit) == 1
         count += 1
         push!(dominatedby, i)
       end
