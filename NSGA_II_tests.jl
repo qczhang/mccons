@@ -41,7 +41,7 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   #verify property of non dominated sorting results
   pop = NSGA_II.population()
   for i =  1: cardinality
-    push!(pop.solutions, NSGA_II.solution([42],randomFitnessArray(fitnessLen)))
+    push!(pop.individuals, NSGA_II.individual([42],randomFitnessArray(fitnessLen)))
   end
 
   sorts = NSGA_II.nonDominatedSort(pop)
@@ -50,8 +50,8 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
     ar = sorts[i]
     for j in ar
       for k in ar
-        fit1 = pop.solutions[j].fitness
-        fit2 = pop.solutions[k].fitness
+        fit1 = pop.individuals[j].fitness
+        fit2 = pop.individuals[k].fitness
         @test NSGA_II.nonDominatedCompare(fit1, fit2) == 0
       end
     end
@@ -65,8 +65,8 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
       b = sorts[i+1]
       for j in a
   for k in b
-    fit1 = pop.solutions[j].fitness
-    fit2 = pop.solutions[k].fitness
+    fit1 = pop.individuals[j].fitness
+    fit2 = pop.individuals[k].fitness
     @test NSGA_II.nonDominatedCompare(fit1, fit2) in (0,1)
   end
       end
@@ -79,11 +79,11 @@ end
 
 
 
-#BEGIN test_solution
-function test_solution()
-  #tests constuctors for solution
-  s1 = NSGA_II.solution([2], [4])
-  s2 = NSGA_II.solution([2], x->map(y->2*y, x))
+#BEGIN test_individual
+function test_individual()
+  #tests constuctors for individual
+  s1 = NSGA_II.individual([2], [4])
+  s2 = NSGA_II.individual([2], x->map(y->2*y, x))
   @test s1 == s2
 end
 #END
@@ -163,9 +163,9 @@ function test_evaluateAgainstOthers(cardinality::Int,
   #generate the population
   pop = NSGA_II.population()
   for i =  1: cardinality
-    push!(pop.solutions, NSGA_II.solution([42],randomFitnessArray(fitnessLen)))
+    push!(pop.individuals, NSGA_II.individual([42],randomFitnessArray(fitnessLen)))
   end
-  #evaluate all solutions
+  #evaluate all individuals
   result = {}
   for i = 1:cardinality
     push!(result, NSGA_II.evaluateAgainstOthers(pop, i, compare_method))
@@ -174,8 +174,8 @@ function test_evaluateAgainstOthers(cardinality::Int,
   for i = 1:cardinality
     if !(isempty(result[i][3]))
       for j in result[i][3]
-        a = pop.solutions[result[i][1]].fitness
-        b = pop.solutions[j].fitness
+        a = pop.individuals[result[i][1]].fitness
+        b = pop.individuals[j].fitness
         @test compare_method(a, b) == -1
       end
     end
@@ -220,9 +220,9 @@ end
 
 #BEGIN generatePop
 function generatePop(size::Int, fitnessLen::Int)
-  p = NSGA_II.solution[]
+  p = NSGA_II.individual[]
   for i = 1:size
-    push!(p, NSGA_II.solution({42}, randomFitnessArray(fitnessLen)))
+    push!(p, NSGA_II.individual({42}, randomFitnessArray(fitnessLen)))
   end
   
   return NSGA_II.population(p)
@@ -234,19 +234,19 @@ end
 #BEGIN test_crowdingDistance
 function test_crowdingDistance()
   #create population
-  p = NSGA_II.solution[]
-  push!(p, NSGA_II.solution({42}, [0,5]))
-  push!(p, NSGA_II.solution({42}, [0,5]))
-  push!(p, NSGA_II.solution({42}, [2,2]))
-  push!(p, NSGA_II.solution({42}, [3,1]))
-  push!(p, NSGA_II.solution({42}, [3,1]))
-  push!(p, NSGA_II.solution({42}, [3,1]))
-  push!(p, NSGA_II.solution({42}, [5,0]))
+  p = NSGA_II.individual[]
+  push!(p, NSGA_II.individual({42}, [0,5]))
+  push!(p, NSGA_II.individual({42}, [0,5]))
+  push!(p, NSGA_II.individual({42}, [2,2]))
+  push!(p, NSGA_II.individual({42}, [3,1]))
+  push!(p, NSGA_II.individual({42}, [3,1]))
+  push!(p, NSGA_II.individual({42}, [3,1]))
+  push!(p, NSGA_II.individual({42}, [5,0]))
   pop = NSGA_II.population(p)
-  
+
   #sort into fronts
   fronts = NSGA_II.nonDominatedSort(pop)
-  
+
   #calculate crowding distances
   NSGA_II.crowdingDistance(pop, fronts[1], 1, true)
   
@@ -255,7 +255,7 @@ function test_crowdingDistance()
   @test pop.distances[[2,2]] == (1,1.4)
   @test pop.distances[[3,1]] == (1,1.0)
   @test pop.distances[[5,0]] == (1,Inf)
-  
+
 end
 #END
 

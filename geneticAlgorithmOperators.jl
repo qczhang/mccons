@@ -29,70 +29,37 @@ module geneticAlgorithmOperators
 
 
 #BEGIN  uniformCrossover
-function uniformCrossover(units1::Vector, units2::Vector)
-  @assert length(units1) == length(units2) != 0
-  
-  newUnits = deepcopy(units1)
-  units2 = deepcopy(units2)
-  
-  for i = 1:length(newUnits)
+function uniformCrossover(genes1::Vector, genes2::Vector)
+  @assert length(genes1) == length(genes2) != 0
+
+  newGenes = deepcopy(genes1)
+  genes2 = deepcopy(genes2)
+
+  for i = 1:length(newGenes)
     if rand() < 0.5
-      newUnits[i] = units2[i]
+      newGenes[i] = genes2[i]
     end
   end
-  
-  return newUnits
+  return newGenes
 end
 #END
 
-
-
-#BEGIN halfUniformCrossover
-function halfUniformCrossover(units1::Vector, units2::Vector)
-  #from wikipedia:
-  #In the half uniform crossover scheme (HUX), exactly half of the nonmatching
-  #bits are swapped. Thus first the Hamming distance (the number of differing bits) 
-  #is calculated. This number is divided by two. The resulting number is how many 
-  #of the bits that do not match between the two parents will be swapped.
-  @assert length(units1) == length(units2) != 0
-  result = deepcopy(units1)
-  units2 = deepcopy(units2)
-  
-  #find how many are matching
-  matching = map(x->x[1]==x[2] ? 1 : 0, zip(result, units2))
-  sumDifferent = length(matching) - reduce(+, matching)
-  
-  #need to swap at least half of the number of non matching
-  toSwap = ceil(sumDifferent / 2)
-  
-  #if not matching, 0.5 probability of exchange
-  for i = 1:length(matching)
-    if matching[i] == 0
-      if rand() < 0.5
-        result[i] = units2[i]
-      end
-    end
-  end
-  
-  return result
-end
-#END
 
 
 
 #BEGIN onePointCrossover
-function onePointCrossover(units1::Vector, units2::Vector)
-  #swap at one point
-  @assert length(units1) == length(units2) != 0
-  result = deepcopy(units1)
-  units2 = deepcopy(units2)
+function onePointCrossover(genes1::Vector, genes2::Vector)
+  #exchange genes after a certain point in the chromosome
+  @assert length(genes1) == length(genes2) != 0
+  result = deepcopy(genes1)
+  genes2 = deepcopy(genes2)
   
   #find point
-  p = rand(1:length(result))
+  point = rand(1:length(result))
   
   #swap the values after the point
-  for i = p:length(result)
-    result[i] = units2[i]
+  for i = point:length(result)
+    result[i] = genes2[i]
   end
   
   return result
@@ -112,18 +79,18 @@ end
 
 
 #BEGIN uniformMutate
-function uniformMutate(individualUnits::Vector, probability::FloatingPoint, alleles::Vector{Vector})
-  #copy the individual units
-  newUnits = deepcopy(individualUnits)
+function uniformMutate(originalGenes::Vector, probability::FloatingPoint, alleles::Vector{Vector})
+  #copy the individual genes
+  newGenes = deepcopy(originalGenes)
   
   #for each unit, mutate if random is inferior to given probability
-  for i = 1:length(newUnits)
+  for i = 1:length(newGenes)
     if(rand() < probability)
-      newUnits[i] = alleles[i][rand(1:length(alleles[i]))]
+      newGenes[i] = alleles[i][rand(1:length(alleles[i]))]
     end
   end
   
-  return newUnits
+  return newGenes
 end
 #END
 
