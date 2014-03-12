@@ -21,6 +21,7 @@
 
 
 require("NSGA_II")
+require("geneticAlgorithmOperators")
 using Base.Test
 
 
@@ -45,6 +46,8 @@ function test_nonDominatedSort(cardinality::Int, fitnessLen::Int)
   end
 
   sorts = NSGA_II.nonDominatedSort(pop)
+  @test length(sorts) != 0
+  
   #no domination within the same front
   for i = 1:length(sorts)
     ar = sorts[i]
@@ -147,10 +150,6 @@ function randomFitnessArray(fitnessLen::Int)
   return rand(1:10000, fitnessLen)
 end
 #END
-
-
-
-
 
 
 
@@ -266,6 +265,50 @@ end
 
 #END
 
+#BEGIN test_main
+function test_main(n::Int)
+  #uses the 0-1 sum to check it does indeed optimize
+  allele = [0,1]
+  ALLELES = Vector{Int}[]
+  for i=1:50
+    push!(ALLELES, allele)
+  end
+  
+  function f(x)
+    #we maximize the sum of the genes
+    v = 0
+    for i in x
+      v+=i[1]
+    end
+    return v
+  end
+  
+  function g(x)
+    #we minimize the sum of the genes
+    v= 0 
+    for i in x
+      v-=i[1]
+    end
+    return v
+  end
+  
+  evalF(x) = [f(x),g(x)]
+  
+  mutationOperator = geneticAlgorithmOperators.uniformMutate
+  crossoverOperator = geneticAlgorithmOperators.uniformCrossover
+  x =  NSGA_II.main(ALLELES,
+                    evalF,
+                    50,
+                    n,
+                    0.1,
+                    0.05,
+                    crossoverOperator,
+                    mutationOperator)
+  
+
+
+end
+
 
 
 #BEGIN test_all
@@ -282,7 +325,7 @@ function test_all()
 end
 #END test_all
 
-test_all()
+#test_all()
 
 
 #END   unit tests

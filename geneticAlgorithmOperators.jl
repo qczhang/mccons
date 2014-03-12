@@ -79,7 +79,7 @@ end
 
 
 #BEGIN uniformMutate
-function uniformMutate(originalGenes::Vector, probability::FloatingPoint, alleles::Vector{Vector})
+function uniformMutate(originalGenes::Vector, alleles::Vector, probability = 0.05)
   #copy the individual genes
   newGenes = deepcopy(originalGenes)
   

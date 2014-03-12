@@ -148,19 +148,37 @@ end
 
 
 ALLELES = foldYeasttRNAs(50)
+populationSize = 50
 
-p = NSGA_II.initializePopulation(ALLELES, evalDistance, 50)
+kickstartingPopulation = NSGA_II.initializePopulation(ALLELES, evalDistance, populationSize)
+previousPopulation = NSGA_II.initializePopulation(ALLELES, evalDistance, populationSize)
+
+mergedPopulation = NSGA_II.population(vcat(kickstartingPopulation.individuals, previousPopulation.individuals))
+fronts = NSGA_II.nonDominatedSort(mergedPopulation)
 
 
-s = NSGA_II.nonDominatedSort(p)
-chosen = 0
+indexOfLastFront = length(fronts)
+lastFront = fronts[indexOfLastFront]
+fronts = fronts[1: (indexOfLastFront - 1)]
 
-for i = 1:length(s)-1
-  NSGA_II.crowdingDistance(p, s[i], i, true)
-  chosen += length(s[i])
+for j = 1:length(fronts)
+  front_j = fronts[j]
+  NSGA_II.crowdingDistance(mergedPopulation, front_j, j, true)
 end
 
-NSGA_II.lastFrontSelection(p, s[end], length(s), int(ceil(length(p.solutions)/2) - chosen))
+k = populationSize - length(reduce(vcat, fronts))
 
 
 
+selectedFromLastFront = NSGA_II.lastFrontSelection(mergedPopulation, 
+                                               lastFront,
+                                               k)
+                                               
+NSGA_II.crowdingDistance(mergedPopulation, selectedFromLastFront, indexOfLastFront, true)
+
+parentsIndices = vcat(reduce(vcat, fronts), selectedFromLastFront)
+
+parentPopulation = NSGA_II.population(mergedPopulation.individuals[parentsIndices],
+                                  mergedPopulation.distances)
+
+childrenTemplates = NSGA_II.UFTournSelection(parentPopulation)
