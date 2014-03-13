@@ -474,12 +474,16 @@ function addToHallOfFame(P::population,
   
   #we know from previous calculation the indices of the best individuals
   firstFront = P.individuals[firstFrontIndices]
+  #println("num in hall of fame $(length(HallOfFame.individuals))")
+  #println("num external first front $(length(firstFront))")
 
+  
   
   #we add add the best individuals to the Hall of Fame
   for i in firstFront
     push!(HallOfFame.individuals, i)
   end
+  #println("update length = $(length(HallOfFame.individuals))")
   
   #elmiminate duplicates (since it is elitist, same individuals may reappear)
   HallOfFame.individuals = unique(HallOfFame.individuals)
@@ -497,15 +501,24 @@ function addToHallOfFame(P::population,
   
   #get indices
   firstFrontIndices2 = map(x->x[1], firstFront2)
+  firstFrontIndividuals = HallOfFame.individuals[firstFrontIndices2]
   
-  #naive purge...
-  if length(firstFrontIndices2) > maxSize
-    firstFrontIndices2 = firstFrontIndices2[1:maxSize]
+  fitnesses = unique(map(x->x.fitness, firstFrontIndividuals))
+  
+  
+  #unique fitnesses
+  selected = individual[]
+  fit = Set{Vector}()
+  for i in firstFrontIndividuals
+    if !(i.fitness in fit)
+      push!(fit, i.fitness)
+      push!(selected, i)
+    end
   end
-
-  
+  #println("fitnesses are \n$fitnesses")
+  #println("length of selected = $(length(selected))")
   #update the Hall of Fame by keeping only the fittest
-  HallOfFame.individuals = HallOfFame.individuals[firstFrontIndices2]
+  HallOfFame.individuals = selected
 end
 #END
 
@@ -761,6 +774,23 @@ function fastDelete(values::Vector, deletion::Vector)
     end
   end
   return result
+end
+#END
+
+
+
+#BEGIN printResult
+function printResult(P::population)
+  mi1 = minimum(map(x->x.fitness[1], P.individuals))
+  ma1 = maximum(map(x->x.fitness[1], P.individuals))
+  
+  mi2 = minimum(map(x->x.fitness[2], P.individuals))
+  ma2 = maximum(map(x->x.fitness[2], P.individuals))
+  
+#   println("max objective 1 = $ma1")
+#   println("min objective 1 = $mi1\n")
+#   println("max objective 2 = $ma2")
+#   println("min objective 2 = $mi2")
 end
 #END
 

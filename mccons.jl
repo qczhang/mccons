@@ -147,8 +147,19 @@ function foldYeasttRNAs(n::Int)
 end
 
 
-
-
+function dotBracketsToShapes(dotB::Vector, lvl::Int)
+  #
+  @assert lvl in [1,2,3]
+  shapeToDotB = Dict()
+  for i in dotB
+    shape = RNA_2D.RNAshapes(i)[lvl]
+    println(shape)
+    actualValue = get(shapeToDotB, shape, Any[])
+    push!(actualValue, i)
+    shapeToDotB[shape] = actualValue
+  end
+  return shapeToDotB
+end
 
 function separateAllelesByAbstractShapes(alleles::Vector, lvl::Int)
   #returns a set of similar alleles (according to abstract shape) 
@@ -181,8 +192,17 @@ function separateAllelesByAbstractShapes(alleles::Vector, lvl::Int)
   return shapeToStructures
 end
 
+function printResultDotB(P::NSGA_II.population, i::Int)
+  @assert i in [0:length(P.individuals)]
+  solution = P.individuals[i]
+  println("fitness \n$(solution.fitness)")
+  for i in solution.genes
+    println(i.dotBracket)
+  end
+end
 
-function main(numIterations::Int, popSize = 50, alleleSize = 50)
+
+function main(popSize = 50,numIterations=50, alleleSize = 50)
   mutationOperator = geneticAlgorithmOperators.uniformMutate
   crossoverOperator = geneticAlgorithmOperators.uniformCrossover
   
@@ -190,11 +210,88 @@ function main(numIterations::Int, popSize = 50, alleleSize = 50)
   
   r = NSGA_II.main(ALLELES,
                    evalDistance,
-                   numIterations,
                    popSize,
-                   0.1,
-                   0.05,
+                   numIterations,
+                   0.2,
+                   0.15,
                    crossoverOperator,
                    mutationOperator)
 
 end
+
+function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population)
+  #will not rewrite files in theory
+  
+  #assert that the file is not already in the local directory
+  listDir = readdir()
+  name = string(fileName, extension)
+  if name in listDir
+    error("$name is already present in the local directory, delete it if you want to write")
+  end
+  
+  f = open(name, "w")
+  
+  #format is:
+  #>id
+  #fitness
+  #dotBrackets
+  #end
+  ind = P.individuals
+  fitnessLen = length(ind[1].fitness)
+  
+  for i=1:length(ind)
+    #write the id
+    println(f, ">$i")
+    
+    fit = ind[i].fitness
+    s = fit[1]
+    for j = 2:fitnessLen
+      s = string(s," ", fit[j])
+    end
+    #write the fitnesses on the same line
+    println(f, s)
+    
+    #write the dot brackets associated
+    for j in ind[i].genes
+      println(f, j.dotBracket)
+    end
+    #write end symbol
+    println(f, "end")
+  end
+  
+  close(f)
+end
+
+
+function extractFitness{T<:String}(fileName::T)
+  fileName = string(fileName)
+  if !(fileName in readdir())
+    error("$fileName is not in the local directory")
+  end
+  
+  f = open(fileName, "r")
+  lines = readlines(f)
+  println(lines)
+  close(f)
+  
+  f2 = open(string("fitness_",fileName), "w")
+  println(lines[1])
+  i=1
+  while i < length(lines)
+    println(i)
+    println(lines[i])
+    if beginswith(lines[i], ">")
+      println(lines[i])
+      index = chomp(lines[i][2:end])
+      fitnesses = chomp(lines[i+1])
+      println(f2, string(index," ", fitnesses))
+      i+=2
+    else
+      i+=1
+    end
+  end
+  close(f2)
+
+end
+
+
