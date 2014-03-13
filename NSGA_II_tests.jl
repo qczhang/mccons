@@ -292,7 +292,7 @@ function test_main(n::Int)
     return v
   end
   
-  evalF(x) = [f(x),g(x)]
+  evalF(x) = [f(x)]
   
   mutationOperator = geneticAlgorithmOperators.uniformMutate
   crossoverOperator = geneticAlgorithmOperators.uniformCrossover

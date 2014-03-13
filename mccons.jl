@@ -5,7 +5,7 @@
 #get NSGA-II and RNA2D 
 require("NSGA_II.jl")
 require("RNA_2D.jl")
-
+require("geneticAlgorithmOperators")
 
 
 #BEGIN callFlashFold
@@ -62,7 +62,7 @@ end
 
 
 function evalDistance(v::Vector)
-  return [evalBPSetDistance(v), evalHausdorff(v)]
+  return [-evalBPSetDistance(v), -evalHausdorff(v)]
 end
 
 function evalDistanceEqualLength(v::Vector)
@@ -147,38 +147,54 @@ function foldYeasttRNAs(n::Int)
 end
 
 
-ALLELES = foldYeasttRNAs(50)
-populationSize = 50
-
-kickstartingPopulation = NSGA_II.initializePopulation(ALLELES, evalDistance, populationSize)
-previousPopulation = NSGA_II.initializePopulation(ALLELES, evalDistance, populationSize)
-
-mergedPopulation = NSGA_II.population(vcat(kickstartingPopulation.individuals, previousPopulation.individuals))
-fronts = NSGA_II.nonDominatedSort(mergedPopulation)
 
 
-indexOfLastFront = length(fronts)
-lastFront = fronts[indexOfLastFront]
-fronts = fronts[1: (indexOfLastFront - 1)]
 
-for j = 1:length(fronts)
-  front_j = fronts[j]
-  NSGA_II.crowdingDistance(mergedPopulation, front_j, j, true)
+function separateAllelesByAbstractShapes(alleles::Vector, lvl::Int)
+  #returns a set of similar alleles (according to abstract shape) 
+  #to be tested for similarity
+  @assert lvl in [1,2,3]
+  #lvl: 1->lvl5, 2->lvl3, 3->lvl1
+  differentShapes = Set{String}()
+  shapeToStructures = Dict{String, Vector{(Int, String)}}()
+  
+  #find unique shapes and map structures 
+  #to their abstract shapes (lvl5, lvl3, lvl1)
+  for moleculeType = 1:length(alleles)
+    for struct = 1:length(alleles[moleculeType])
+      println(length(moleculeType))
+      dotBracket = alleles[moleculeType][struct].dotBracket
+      println(dotBracket)
+      shape = RNA_2D.RNAshapes(dotBracket)[lvl]
+      actualMapping = get(shapeToStructures, shape, (Int, String)[])
+      println(actualMapping)
+      println(typeof(actualMapping))
+      push!(actualMapping, (moleculeType, dotBracket))
+      println(actualMapping)
+      shapeToStructures[shape] = actualMapping
+    end
+  end
+  
+  println(length(differentShapes))
+  
+  #assemble sets of shapes
+  return shapeToStructures
 end
 
-k = populationSize - length(reduce(vcat, fronts))
 
+function main(numIterations::Int, popSize = 50, alleleSize = 50)
+  mutationOperator = geneticAlgorithmOperators.uniformMutate
+  crossoverOperator = geneticAlgorithmOperators.uniformCrossover
+  
+  ALLELES = foldYeasttRNAs(alleleSize)
+  
+  r = NSGA_II.main(ALLELES,
+                   evalDistance,
+                   numIterations,
+                   popSize,
+                   0.1,
+                   0.05,
+                   crossoverOperator,
+                   mutationOperator)
 
-
-selectedFromLastFront = NSGA_II.lastFrontSelection(mergedPopulation, 
-                                               lastFront,
-                                               k)
-                                               
-NSGA_II.crowdingDistance(mergedPopulation, selectedFromLastFront, indexOfLastFront, true)
-
-parentsIndices = vcat(reduce(vcat, fronts), selectedFromLastFront)
-
-parentPopulation = NSGA_II.population(mergedPopulation.individuals[parentsIndices],
-                                  mergedPopulation.distances)
-
-childrenTemplates = NSGA_II.UFTournSelection(parentPopulation)
+end
