@@ -298,7 +298,7 @@ function test_main(n::Int)
   crossoverOperator = geneticAlgorithmOperators.uniformCrossover
   x =  NSGA_II.main(ALLELES,
                     evalF,
-                    50,
+                    100,
                     n,
                     0.1,
                     0.05,

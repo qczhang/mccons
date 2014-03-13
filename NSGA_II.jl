@@ -467,7 +467,7 @@ end
 function addToHallOfFame(P::population, 
                          firstFrontIndices::Vector{Int},
                          HallOfFame::hallOfFame,
-                         maxSize=100)
+                         maxSize=400)
   #add the best individuals to the Hall of Fame population to save them for
   #further examination. we merge the first front of the actual population
   #with the rest of the hall of fame to then select the first front of it.
@@ -480,6 +480,9 @@ function addToHallOfFame(P::population,
   for i in firstFront
     push!(HallOfFame.individuals, i)
   end
+  
+  #elmiminate duplicates (since it is elitist, same individuals may reappear)
+  HallOfFame.individuals = unique(HallOfFame.individuals)
   
   #find the first non dominated front, to select the best individuals of the new Hall of Fame
   
@@ -511,13 +514,13 @@ end
 #BEGIN main
 
 function main(alleles::Vector,
-                         fitnessFunction::Function,
-                         populationSize::Int,
-                         iterations::Int,
-                         probabilityOfCrossover = 0.1,
-                         probabilityOfMutation = 0.05,
-                         crossoverOperator = geneticAlgorithmOperators.uniformCrossover,
-                         mutationOperator = geneticAlgorithmOperators.uniformMutate)
+              fitnessFunction::Function,
+              populationSize::Int,
+              iterations::Int,
+              probabilityOfCrossover = 0.1,
+              probabilityOfMutation = 0.05,
+              crossoverOperator = geneticAlgorithmOperators.uniformCrossover,
+              mutationOperator = geneticAlgorithmOperators.uniformMutate)
   @assert populationSize > 0
   @assert iterations > 0
   
