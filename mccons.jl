@@ -75,49 +75,38 @@ end
 
 
 #BEGIN data
-yeastTRNAs = {
-"tRNA-ASN" =>
-"GACUCCAUGGCCAAGUUGGUUAAGGCGUGCGACUGUUAAUCGCAAGAUCGUGAGUUCAACCCUCACUGGGGUCGCCA",
-
-"tRNA-GLY" =>
-"GCGCAAGUGGUUUAGUGGUAAAAUCCAACGUUGCCAUCGUUGGGCCCCGGUUCGAUUCCGGGCUUGCGCACCA",
-
-"tRNA-ILE" =>
-"GGUCUCUUGGCCCAGUUGGUUAAGGCACCGUGCUAAUAACGCGGGGAUCAGCGGUUCGAUCCCGCUAGAGACCACCA",
-
-"tRNA-LYS" =>
-"UCCUUGUUAGCUCAGUUGGUAGAGCGUUCGGCUUUUAACCGAAAUGUCAGGGGUUCGAGCCCCCUAUGAGGAGCCA",
-
-"tRNA-MET" =>
-"GCUUCAGUAGCUCAGUAGGAAGAGCGUCAGUCUCAUAAUCUGAAGGUCGAGAGUUCGAACCUCUCCUGGAGCACCA",
-
-"tRNA-THR" =>
-"GCUUCUAUGGCCAAGUUGGUAAGGCGCCACACUAGUAAUGUGGAGAUCAUCGGUUCAAAUCCGAUUGGAAGCACCA",
-
-"tRNA-TRP" =>
-"GAAGCGGUGGCUCAAUGGUAGAGCUUUCGACUCCAAAUCGAAGGGUUGCAGGUUCAAUUCCUGUCCGUUUCACCA",
-
-"tRNA-ALA" =>
-"GGGCGUGUGGCGUAGUCGGUAGCGCGCUCCCUUAGCAUGGGAGAGGUCUCCGGUUCGAUUCCGGACUCGUCCACCA",
-
-"tRNA-ARG" =>
-"UUCCUCGUGGCCCAAUGGUCACGGCGUCUGGCUACGAACCAGAAGAUUCCAGGUUCAAGUCCUGGCGGGGAAGCCA",
-
-"tRNA-ASP" =>
-"UCCGUGAUAGUUUAAUGGUCAGAAUGGGCGCUUGUCGCGUGCCAGAUCGGGGUUCAAUUCCCCGUCGCGGAGCCA",
-
-"tRNA-GLU" =>
-"UCCGAUAUAGUGUAACGGCUAUCACAUCACGCUUUCACCGUGGAGACCGGGGUUCGACUCCCCGUAUCGGAGCCA",
-
-"tRNA-HIS" =>
-"GGCCAUCUUAGUAUAGUGGUUAGUACACAACAUUGUGGCUGUUGAAACCCUGGUUCGAUUCUAGGAGGUGGCACCA",
-
-"tRNA-PHE" =>
-"GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA",
-
-"tRNA-VAL" =>
-"GGUUUCGUGGUCUAGUCGGUUAUGGCAUCUGCUUAACACGCAGAACGUCCCCAGUUCGAUCCUGGGCGAAAUCACCA"}
-
+IREs = {
+#length = 
+"AY112742_1_12_41" => "GUcCUGCUUCAACAGUGCUUGAACGGaAC",
+"BC019840_1_11_40" => "GUcUUGCUUCAACAGUGUUUGAACGGaAC",
+"AF086786_1_2_28" => "UcGUUCGUCCUCAGUGCAGGGCAACaG",
+"S57280_1_391_417" => "UcGUUCGUCCUCAGUGCAGGGCAAUaG",
+"AF171078_1_1416_1442" => "UgGUUCGUCCUCAGUGCAGGGCAACaG",
+"AJ426432_1_1593_1619" => "AUUAUCGGGAGCAGUGUCUUCCAUAAU",
+"X13753_1_1371_1397" => "AUUAUCGGGGGCAGUGUCUUCCAUAAU",
+"X01060_1_3482_3508" => "AUUAUCGGAAGCAGUGCCUUCCAUAAU",
+"BC001188_1_3791_3817" => "AUUAUCGGGAACAGUGUUUCCCAUAAU",
+"X13753_1_1481_1507" => "AUUAUCGGGGACAGUGUUUCCCAUAAU",
+"AJ426432_1_1658_1684" => "UAUAUCGGAGACAGUGAUCUCCAUAUG" ,
+"M58040_1_3309_3335" => "UAUAUCGGAGaCAGUGAcCUCCAUAUG" ,
+"X13753_1_1434_1460" => "UAUAUCGGAGGCAGUGACCUCCAUAUG" ,
+"X01060_1_3950_3976" => "UGUAUCGGAGACAGUGAUCUCCAUAUG" ,
+"X01060_1_3432_3458" => "UUUAUCAGUGACAGAGUUCACUAUAAA" ,
+"X13753_1_830_856" => "UUUAUCAGUGACAGCGUUCACUAUAAA" ,
+"AY120878_1_50_76" => "GgUCGCGUCAACAGUGUUUGAUCGAaC" ,
+#length = 
+"AB062402_1_11_40" => "uUUCCUGCUUCAACAGUGCUUGGACGGAAc" ,
+"AB073371_1_5_34" => "uCUCCUGCUUCAACAGUGCUUGGACGGAGc" ,
+"AF285177_1_3_32" => "GUUCCUGCUUCAACAGUGCUUGGACGGAAC" ,
+"M16343_1_1306_1335" => "GUUCCUGCgUCAACAGUGCUUGGaCGGAAC",
+"AF338763_1_11_40" => "UUaCCUGCUUCAACAGUGCUUGAACGGcAA",
+"AF117958_1_132_161" => "ucUCUUGUUUCAACAGUGUUUGGACGGAac",
+"AF266195_1_14_43" => "AUUCUUGCUUCAACAGUGUUUGAACGGAAU" ,
+"D86625_1_6_35" => "GUUCUUGUUUCAACAGUGAUUGAACGGAAC" ,
+"S77386_1_28_57" => "GUUCUUGCUUCAACAGUGAUUGAACGGAAC" ,
+"M12120_1_24_53" => "GUUCUUGCUUCAACAGUGUUUGAACGGAAC" ,
+"L39879_1_1190_1219" => "GUaCUUGCUUCAACAGUGUUUGAACGGaAC",
+"J02741_1_400_429" => "aUCUUGCUUCAACAGUGUUUGGACGGAa" }
 #END
 
 
@@ -134,12 +123,13 @@ end
 
 
 
-function foldYeasttRNAs(n::Int)
+function foldAllToStructure(dict::Dict, n::Int)
+  #get the keys
+  k = collect(keys(dict))
   vals = Vector{RNA_2D.structure}[]
-  k = collect(keys(yeastTRNAs))
   
   for i = 1:length(k)
-    folded = callFlashFold(yeastTRNAs[k[i]], n)
+    folded = callFlashFold(dict[k[i]], n)
     folds = map(x -> RNA_2D.structure(i, x[1], x[2]), folded)
     push!(vals, folds)
   end
@@ -206,7 +196,7 @@ function main(popSize = 50,numIterations=50, alleleSize = 50)
   mutationOperator = geneticAlgorithmOperators.uniformMutate
   crossoverOperator = geneticAlgorithmOperators.uniformCrossover
   
-  ALLELES = foldYeasttRNAs(alleleSize)
+  ALLELES = foldAllToStructure(IREs, alleleSize)
   
   r = NSGA_II.main(ALLELES,
                    evalDistance,
@@ -221,7 +211,7 @@ end
 
 
 
-function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population)
+function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population, alleles::Vector)
   #will not rewrite files in theory
   
   #assert that the file is not already in the local directory
@@ -254,7 +244,10 @@ function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population
     println(f, s)
     
     #write the dot brackets associated
-    for j in ind[i].genes
+    for j=1:length(ind[i].genes)
+    \todddddddddddddddddddddddooooooooooooooooooooooooooooooo append subopt number
+#       dotBracket = 
+#       indexAt = findfirst(alleles[j], )
       println(f, j.dotBracket)
     end
     #write end symbol
@@ -277,13 +270,13 @@ function extractFitness{T<:String}(fileName::T)
   close(f)
   
   f2 = open(string("fitness_",fileName), "w")
-  println(lines[1])
+  #println(lines[1])
   i=1
   while i < length(lines)
-    println(i)
-    println(lines[i])
+    #println(i)
+    #println(lines[i])
     if beginswith(lines[i], ">")
-      println(lines[i])
+      #println(lines[i])
       index = chomp(lines[i][2:end])
       fitnesses = chomp(lines[i+1])
       println(f2, string(index," ", fitnesses))
