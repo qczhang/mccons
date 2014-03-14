@@ -219,6 +219,8 @@ function main(popSize = 50,numIterations=50, alleleSize = 50)
 
 end
 
+
+
 function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population)
   #will not rewrite files in theory
   

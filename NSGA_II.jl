@@ -124,7 +124,7 @@ function initializePopulation{T}(alleles::Vector{Vector{T}},
   P = population()
   index = 1
   while index <= n
-    genes = {}
+    genes = T[]
     for i in alleles
       push!(genes, i[rand(1:length(i))])
     end
