@@ -221,6 +221,16 @@ function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population
     error("$name is already present in the local directory, delete it if you want to write")
   end
   
+  #extract the dotbrackets fron the structures in alleles
+  alleles2 = Vector{String}[]
+  for i in alleles
+    toAdd = String[]
+    for j in i
+      push!(toAdd, j.dotBracket)
+    end
+    push!(alleles2, toAdd)
+  end
+  
   f = open(name, "w")
   
   #format is:
@@ -231,7 +241,7 @@ function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population
   ind = P.individuals
   fitnessLen = length(ind[1].fitness)
   
-  for i=1:length(ind)
+  for i = 1:length(ind)
     #write the id
     println(f, ">$i")
     
@@ -245,10 +255,11 @@ function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population
     
     #write the dot brackets associated
     for j=1:length(ind[i].genes)
-    \todddddddddddddddddddddddooooooooooooooooooooooooooooooo append subopt number
-#       dotBracket = 
-#       indexAt = findfirst(alleles[j], )
-      println(f, j.dotBracket)
+      struct = ind[i].genes[j].dotBracket
+      
+      index = findfirst(alleles2[j], struct)
+      println(f, string(struct, " ", index))
+      
     end
     #write end symbol
     println(f, "end")
@@ -266,7 +277,7 @@ function extractFitness{T<:String}(fileName::T)
   
   f = open(fileName, "r")
   lines = readlines(f)
-  println(lines)
+  #println(lines)
   close(f)
   
   f2 = open(string("fitness_",fileName), "w")
@@ -276,7 +287,6 @@ function extractFitness{T<:String}(fileName::T)
     #println(i)
     #println(lines[i])
     if beginswith(lines[i], ">")
-      #println(lines[i])
       index = chomp(lines[i][2:end])
       fitnesses = chomp(lines[i+1])
       println(f2, string(index," ", fitnesses))
