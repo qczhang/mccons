@@ -183,6 +183,8 @@ function compareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   end
 end
 
+compareBPSet(s1::structure, s2::structure) = compareBPSet(s1.base_pair_set, s2.base_pair_set)
+
 
 
 function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
@@ -198,6 +200,8 @@ function compareHausdorff(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
   hausdorffRightToLeft = maximum(map(x->distanceBPtoSet(x,bp1), bp2))
   return max(hausdorffLefttoRight, hausdorffRightToLeft)
 end
+
+compareHausdorff(s1::structure, s2::structure) = compareHausdorff(s1.base_pair_set, s2.base_pair_set)
 #END
 
 

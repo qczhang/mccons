@@ -2,7 +2,6 @@ module NSGA_II
 
 
 
-
 #------------------------------------------------------------------------------
 #BEGIN readme
 
@@ -44,7 +43,6 @@ require("geneticAlgorithmOperators")
 
 #------------------------------------------------------------------------------
 #BEGIN type definitions
-
 
 
 immutable individual
@@ -506,18 +504,16 @@ function addToHallOfFame(P::population,
   fitnesses = unique(map(x->x.fitness, firstFrontIndividuals))
   
   
-  #unique fitnesses
+  #unique genes
   selected = individual[]
-  fit = Set{Vector}()
+  allGenes = Set{Vector}()
   for i in firstFrontIndividuals
-    if !(i.fitness in fit)
-      push!(fit, i.fitness)
+    if !(i.genes in allGenes)
+      push!(allGenes, i.genes)
       push!(selected, i)
     end
   end
-  #println("fitnesses are \n$fitnesses")
-  #println("length of selected = $(length(selected))")
-  #update the Hall of Fame by keeping only the fittest
+
   HallOfFame.individuals = selected
 end
 #END

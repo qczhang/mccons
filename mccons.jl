@@ -1,12 +1,79 @@
-#MCCONS rework
+#------------------------------------------------------------------------------
+#BEGIN readme
 
 
 
-#get NSGA-II and RNA2D 
+#original MC-CONS
+#Input : n RNAs sequences with each m associated subotimal secondary structures
+#Output: alignment of n secondary structures, giving a "consensus" structure
+#(one secondary structure per RNA sequence)
+
+#this version
+#Input : same as the original + one or many RNA secondary structure distance functions
+#Output: a number of nondominated sets of n secondary structures, according
+#to the chosen distance functions. The output can then be filtered according to
+#desired usage
+
+
+
+#END   readme
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+#BEGIN imports
+
+
 require("NSGA_II.jl")
 require("RNA_2D.jl")
 require("geneticAlgorithmOperators")
 
+
+
+#END   imports
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+#BEGIN data
+IREs = {
+"AY112742_1_12_41" => "GUcCUGCUUCAACAGUGCUUGAACGGaAC",
+"BC019840_1_11_40" => "GUcUUGCUUCAACAGUGUUUGAACGGaAC",
+"AF086786_1_2_28" => "UcGUUCGUCCUCAGUGCAGGGCAACaG",
+"S57280_1_391_417" => "UcGUUCGUCCUCAGUGCAGGGCAAUaG",
+"AF171078_1_1416_1442" => "UgGUUCGUCCUCAGUGCAGGGCAACaG",
+"AJ426432_1_1593_1619" => "AUUAUCGGGAGCAGUGUCUUCCAUAAU",
+"X13753_1_1371_1397" => "AUUAUCGGGGGCAGUGUCUUCCAUAAU",
+"X01060_1_3482_3508" => "AUUAUCGGAAGCAGUGCCUUCCAUAAU",
+"BC001188_1_3791_3817" => "AUUAUCGGGAACAGUGUUUCCCAUAAU",
+"X13753_1_1481_1507" => "AUUAUCGGGGACAGUGUUUCCCAUAAU",
+"AJ426432_1_1658_1684" => "UAUAUCGGAGACAGUGAUCUCCAUAUG" ,
+"M58040_1_3309_3335" => "UAUAUCGGAGaCAGUGAcCUCCAUAUG" ,
+"X13753_1_1434_1460" => "UAUAUCGGAGGCAGUGACCUCCAUAUG" ,
+"X01060_1_3950_3976" => "UGUAUCGGAGACAGUGAUCUCCAUAUG" ,
+"X01060_1_3432_3458" => "UUUAUCAGUGACAGAGUUCACUAUAAA" ,
+"X13753_1_830_856" => "UUUAUCAGUGACAGCGUUCACUAUAAA" ,
+"AY120878_1_50_76" => "GgUCGCGUCAACAGUGUUUGAUCGAaC" ,
+"AB062402_1_11_40" => "uUUCCUGCUUCAACAGUGCUUGGACGGAAc" ,
+"AB073371_1_5_34" => "uCUCCUGCUUCAACAGUGCUUGGACGGAGc" ,
+"AF285177_1_3_32" => "GUUCCUGCUUCAACAGUGCUUGGACGGAAC" ,
+"M16343_1_1306_1335" => "GUUCCUGCgUCAACAGUGCUUGGaCGGAAC",
+"AF338763_1_11_40" => "UUaCCUGCUUCAACAGUGCUUGAACGGcAA",
+"AF117958_1_132_161" => "ucUCUUGUUUCAACAGUGUUUGGACGGAac",
+"AF266195_1_14_43" => "AUUCUUGCUUCAACAGUGUUUGAACGGAAU" ,
+"D86625_1_6_35" => "GUUCUUGUUUCAACAGUGAUUGAACGGAAC" ,
+"S77386_1_28_57" => "GUUCUUGCUUCAACAGUGAUUGAACGGAAC" ,
+"M12120_1_24_53" => "GUUCUUGCUUCAACAGUGUUUGAACGGAAC" ,
+"L39879_1_1190_1219" => "GUaCUUGCUUCAACAGUGUUUGAACGGaAC",
+"J02741_1_400_429" => "aUCUUGCUUCAACAGUGUUUGGACGGAa" }
+#END
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+#BEGIN folding functions
 
 #BEGIN callFlashFold
 function callFlashFold(sequence::String, ft::Int)
@@ -25,109 +92,12 @@ end
 
 
 
-function pairwiseAll(f::Function, v::Vector)
-  #helper, compares all to all, including self to self,
-  #since distances have 0, doesn't make a difference
-  result = {}
-  for i=1:length(v)
-    for j = i:length(v)
-      push!(result, f(v[i], v[j]))
-    end
-  end  
-  return result
-end
-
-
-
-#BEGIN evaluation functions
-function evalBPSetDistance(v::Vector)
-  v2 = map(x->x.base_pair_set, v)
-  reduce(+, pairwiseAll(RNA_2D.compareBPSet, v2))
-end
-
-
-
-function evalMountainDistance(v::Vector)
-  v2 = map(x->x.mountain, v)
-  reduce(+, pairwiseAll(RNA_2D.compareMountainDistance, v2))
-end
-
-
-
-function evalHausdorff(v::Vector)
-  v2 = map(x->x.base_pair_set, v)
-  reduce(+, pairwiseAll(RNA_2D.compareHausdorff, v2))
-end
-
-
-
-function evalDistance(v::Vector)
-  return [-evalBPSetDistance(v), -evalHausdorff(v)]
-end
-
-function evalDistanceEqualLength(v::Vector)
-  #uses the mountain distance in addition to base pair set and hausdorff 
-  return [evalBPSetDistance(v), evalHausdorff(v), evalMountainDistance(v)]
-end
-
-#END
-
-
-
-#BEGIN data
-IREs = {
-#length = 
-"AY112742_1_12_41" => "GUcCUGCUUCAACAGUGCUUGAACGGaAC",
-"BC019840_1_11_40" => "GUcUUGCUUCAACAGUGUUUGAACGGaAC",
-"AF086786_1_2_28" => "UcGUUCGUCCUCAGUGCAGGGCAACaG",
-"S57280_1_391_417" => "UcGUUCGUCCUCAGUGCAGGGCAAUaG",
-"AF171078_1_1416_1442" => "UgGUUCGUCCUCAGUGCAGGGCAACaG",
-"AJ426432_1_1593_1619" => "AUUAUCGGGAGCAGUGUCUUCCAUAAU",
-"X13753_1_1371_1397" => "AUUAUCGGGGGCAGUGUCUUCCAUAAU",
-"X01060_1_3482_3508" => "AUUAUCGGAAGCAGUGCCUUCCAUAAU",
-"BC001188_1_3791_3817" => "AUUAUCGGGAACAGUGUUUCCCAUAAU",
-"X13753_1_1481_1507" => "AUUAUCGGGGACAGUGUUUCCCAUAAU",
-"AJ426432_1_1658_1684" => "UAUAUCGGAGACAGUGAUCUCCAUAUG" ,
-"M58040_1_3309_3335" => "UAUAUCGGAGaCAGUGAcCUCCAUAUG" ,
-"X13753_1_1434_1460" => "UAUAUCGGAGGCAGUGACCUCCAUAUG" ,
-"X01060_1_3950_3976" => "UGUAUCGGAGACAGUGAUCUCCAUAUG" ,
-"X01060_1_3432_3458" => "UUUAUCAGUGACAGAGUUCACUAUAAA" ,
-"X13753_1_830_856" => "UUUAUCAGUGACAGCGUUCACUAUAAA" ,
-"AY120878_1_50_76" => "GgUCGCGUCAACAGUGUUUGAUCGAaC" ,
-#length = 
-"AB062402_1_11_40" => "uUUCCUGCUUCAACAGUGCUUGGACGGAAc" ,
-"AB073371_1_5_34" => "uCUCCUGCUUCAACAGUGCUUGGACGGAGc" ,
-"AF285177_1_3_32" => "GUUCCUGCUUCAACAGUGCUUGGACGGAAC" ,
-"M16343_1_1306_1335" => "GUUCCUGCgUCAACAGUGCUUGGaCGGAAC",
-"AF338763_1_11_40" => "UUaCCUGCUUCAACAGUGCUUGAACGGcAA",
-"AF117958_1_132_161" => "ucUCUUGUUUCAACAGUGUUUGGACGGAac",
-"AF266195_1_14_43" => "AUUCUUGCUUCAACAGUGUUUGAACGGAAU" ,
-"D86625_1_6_35" => "GUUCUUGUUUCAACAGUGAUUGAACGGAAC" ,
-"S77386_1_28_57" => "GUUCUUGCUUCAACAGUGAUUGAACGGAAC" ,
-"M12120_1_24_53" => "GUUCUUGCUUCAACAGUGUUUGAACGGAAC" ,
-"L39879_1_1190_1219" => "GUaCUUGCUUCAACAGUGUUUGAACGGaAC",
-"J02741_1_400_429" => "aUCUUGCUUCAACAGUGUUUGGACGGAa" }
-#END
-
-
-
-function generateAlleles(RNAs::Vector{String}, n::Int)
-  @assert n > 0
-  #we use flash fold to generate n suboptimals per RNA
-  alleles = Vector{(String, FloatingPoint)}[]
-  for i in RNAs
-    push!(alleles, callFlashFold(i, n))
-  end
-  return alleles
-end
-
-
-
-function foldAllToStructure(dict::Dict, n::Int)
+#BEGIN foldAll
+function foldAll(dict::Dict, n::Int)
+  #uses 
   #get the keys
   k = collect(keys(dict))
   vals = Vector{RNA_2D.structure}[]
-  
   for i = 1:length(k)
     folded = callFlashFold(dict[k[i]], n)
     folds = map(x -> RNA_2D.structure(i, x[1], x[2]), folded)
@@ -135,70 +105,110 @@ function foldAllToStructure(dict::Dict, n::Int)
   end
   return vals
 end
+#END
+
+#END
+#------------------------------------------------------------------------------
 
 
-function dotBracketsToShapes(dotB::Vector, lvl::Int)
-  #
-  @assert lvl in [1,2,3]
-  shapeToDotB = Dict()
-  for i in dotB
-    shape = RNA_2D.RNAshapes(i)[lvl]
-    println(shape)
-    actualValue = get(shapeToDotB, shape, Any[])
-    push!(actualValue, i)
-    shapeToDotB[shape] = actualValue
-  end
-  return shapeToDotB
-end
 
-function separateAllelesByAbstractShapes(alleles::Vector, lvl::Int)
-  #returns a set of similar alleles (according to abstract shape) 
-  #to be tested for similarity
-  @assert lvl in [1,2,3]
-  #lvl: 1->lvl5, 2->lvl3, 3->lvl1
-  differentShapes = Set{String}()
-  shapeToStructures = Dict{String, Vector{(Int, String)}}()
+
+#BEGIN precalculate
+function precalculate{T}(distanceFunction::Function, alleles::Vector{Vector{T}})
+  #allows memoization of the results of all possible distance function 
+  #comparisons for the given alleles
   
-  #find unique shapes and map structures 
-  #to their abstract shapes (lvl5, lvl3, lvl1)
-  for moleculeType = 1:length(alleles)
-    for struct = 1:length(alleles[moleculeType])
-      println(length(moleculeType))
-      dotBracket = alleles[moleculeType][struct].dotBracket
-      println(dotBracket)
-      shape = RNA_2D.RNAshapes(dotBracket)[lvl]
-      actualMapping = get(shapeToStructures, shape, (Int, String)[])
-      println(actualMapping)
-      println(typeof(actualMapping))
-      push!(actualMapping, (moleculeType, dotBracket))
-      println(actualMapping)
-      shapeToStructures[shape] = actualMapping
+  #O(n^2) on number of alleles in space and time (so be careful)
+  
+  #we require that two properties are respected
+  # -distance function is symmetric
+  # -fitness function is the sum of the distance function across all alleles
+  
+  allAlleles = reduce(vcat, alleles)
+  
+  comparisons = Dict{(T,T), Number}()
+
+  len = length(allAlleles)
+  
+  for elem1 = 1:len
+    for elem2 = elem1:len
+      #add the result of the comparison to the dict
+      v1 = allAlleles[elem1]
+      v2 = allAlleles[elem2]
+      elems = (v1, v2)
+      if !(elems in keys(comparisons))
+        #since it is symmetrical...
+        if (v2, v1) in keys(comparisons)
+          comparisons[elems] = comparisons[(v2, v1)]
+        else
+          distance = distanceFunction(allAlleles[elem1], allAlleles[elem2])
+          comparisons[elems] = distance
+        end
+      end
     end
   end
   
-  println(length(differentShapes))
-  
-  #assemble sets of shapes
-  return shapeToStructures
-end
-
-function printResultDotB(P::NSGA_II.population, i::Int)
-  @assert i in [0:length(P.individuals)]
-  solution = P.individuals[i]
-  println("fitness \n$(solution.fitness)")
-  for i in solution.genes
-    println(i.dotBracket)
+  #create the memoized function
+  function memoized{T}(genes::Vector{T})
+    fitness = 0
+    for i1 = 1:length(genes)
+      for i2 = i1:length(genes)
+        elems = (genes[i1], genes[i2])
+        fitness += comparisons[elems]
+      end
+    end
+    return fitness
   end
+  
+  return memoized
+end
+#END
+
+
+
+function memoizeDist(distanceFunction::Function, toEvaluate::Vector{RNA_2D.structure}, memory::Dict{(String,String), Number})
+  summation = 0
+  len = length(toEvaluate)
+  for i=1:len
+    for j=i:len
+      struct1 = toEvaluate[i]
+      d1 = struct1.dotBracket
+      struct2 = toEvaluate[j]
+      d2 = struct2.dotBracket
+      #dist(x,x) = 0
+      if d1 != d2
+        #
+        if !((d1,d2) in keys(memory))
+          distance = distanceFunction(struct1, struct2)
+          memory[(d1,d2)] = distance
+          memory[(d2,d1)] = distance
+        end
+        summation += memory[(d1,d2)]
+      end
+    end
+  end
+  return summation
 end
 
 
-function main(popSize = 50,numIterations=50, alleleSize = 50)
+function main(popSize = 50,numIterations=50, alleleSize = 30)
   mutationOperator = geneticAlgorithmOperators.uniformMutate
   crossoverOperator = geneticAlgorithmOperators.uniformCrossover
   
-  ALLELES = foldAllToStructure(IREs, alleleSize)
+  alleles = foldAll(IREs, alleleSize)
   
-  r = NSGA_II.main(ALLELES,
+  #memoize the results
+  const bpset = Dict{(String,String), Number}()
+  const hausdorff = Dict{(String,String), Number}()
+  
+  #
+  memoizedBPSetDist(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareBPSet, v, bpset)
+  memoizedHausdorff(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareHausdorff, v, hausdorff)
+  
+  evalDistance(v::Vector) = [-memoizedBPSetDist(v), -memoizedHausdorff(v)]
+  println("memoized functions done")
+  
+  r = NSGA_II.main(alleles,
                    evalDistance,
                    popSize,
                    numIterations,
@@ -206,17 +216,19 @@ function main(popSize = 50,numIterations=50, alleleSize = 50)
                    0.15,
                    crossoverOperator,
                    mutationOperator)
-
+  return (r, alleles)
 end
 
 
 
-function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population, alleles::Vector)
+#------------------------------------------------------------------------------
+#BEGIN io
+
+function writeResult{T<:String}(fileName::T, P::NSGA_II.population, alleles::Vector)
   #will not rewrite files in theory
-  
   #assert that the file is not already in the local directory
   listDir = readdir()
-  name = string(fileName, extension)
+  name = string(fileName)
   if name in listDir
     error("$name is already present in the local directory, delete it if you want to write")
   end
@@ -269,6 +281,7 @@ function writeResult{T<:String}(fileName::T, extension::T, P::NSGA_II.population
 end
 
 
+
 function extractFitness{T<:String}(fileName::T)
   fileName = string(fileName)
   if !(fileName in readdir())
@@ -298,5 +311,16 @@ function extractFitness{T<:String}(fileName::T)
   close(f2)
 
 end
+
+
+
+function writeAndExtract{T}(fileName::T, P::NSGA_II.population, alleles::Vector)
+  writeResult(fileName, P, alleles)
+  extractFitness(fileName)
+
+end
+
+#END
+#------------------------------------------------------------------------------
 
 
