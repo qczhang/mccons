@@ -205,6 +205,39 @@ compareHausdorff(s1::structure, s2::structure) = compareHausdorff(s1.base_pair_s
 #END
 
 
+#BEGIN levenshteinDistance
+function levenshteinDistance{T<:String}(s::T, t::T)
+  #calculates the lvenshtein distance between two strings
+  #(in our case, two vienna dot bracket secondary structures)
+  m = length(s)
+  n = length(t)
+  d = zeros(m+1,n+1)
+  for i = 1:m+1
+    d[i, 1] = i-1
+  end
+  
+  for j=1:n+1
+    d[1,j] = j-1
+  end
+  
+  for j=2:n+1
+    for i =2:m+1
+      if s[i-1] == t[j-1]
+        d[i,j] = d[i-1, j-1]
+      else
+        choices = [d[i-1, j]+1, d[i, j-1]+1, d[i-1, j-1]+1]
+        d[i,j] = minimum(choices)
+      end
+    end
+  end
+#   println(d)
+  return d[m,n]
+end
+
+levenshteinDistance(s1::structure, s2::structure) = levenshteinDistance(s1.dotBracket, s2.dotBracket)
+#END
+
+
 
 #BEGIN RNAshapes
 function RNAShape_fetchStems(structure::String)

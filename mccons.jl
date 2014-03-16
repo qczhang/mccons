@@ -1,3 +1,7 @@
+
+
+
+
 #------------------------------------------------------------------------------
 #BEGIN readme
 
@@ -21,6 +25,7 @@
 
 
 
+
 #------------------------------------------------------------------------------
 #BEGIN imports
 
@@ -33,6 +38,7 @@ require("geneticAlgorithmOperators")
 
 #END   imports
 #------------------------------------------------------------------------------
+
 
 
 
@@ -70,6 +76,8 @@ IREs = {
 "J02741_1_400_429" => "aUCUUGCUUCAACAGUGUUUGGACGGAa" }
 #END
 #------------------------------------------------------------------------------
+
+
 
 
 #------------------------------------------------------------------------------
@@ -111,6 +119,10 @@ end
 #------------------------------------------------------------------------------
 
 
+
+
+#------------------------------------------------------------------------------
+#BEGIN optimizing functions
 
 
 #BEGIN precalculate
@@ -165,7 +177,7 @@ end
 #END
 
 
-
+#BEGIN memoize distance
 function memoizeDist(distanceFunction::Function, toEvaluate::Vector{RNA_2D.structure}, memory::Dict{(String,String), Number})
   summation = 0
   len = length(toEvaluate)
@@ -189,23 +201,32 @@ function memoizeDist(distanceFunction::Function, toEvaluate::Vector{RNA_2D.struc
   end
   return summation
 end
+#END
 
 
-function main(popSize = 50,numIterations=50, alleleSize = 30)
+#END
+#------------------------------------------------------------------------------
+
+
+
+
+#------------------------------------------------------------------------------
+#BEGIN main function
+function main(popSize = 250,numIterations = 100, alleleSize = 30)
   mutationOperator = geneticAlgorithmOperators.uniformMutate
   crossoverOperator = geneticAlgorithmOperators.uniformCrossover
   
   alleles = foldAll(IREs, alleleSize)
   
   #memoize the results
-  const bpset = Dict{(String,String), Number}()
+  #const bpset = Dict{(String,String), Number}()
   const hausdorff = Dict{(String,String), Number}()
+  const levenshtein = Dict{(String,String), Number}()
   
-  #
-  memoizedBPSetDist(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareBPSet, v, bpset)
+  #memoizedBPSetDist(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareBPSet, v, bpset)
   memoizedHausdorff(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareHausdorff, v, hausdorff)
-  
-  evalDistance(v::Vector) = [-memoizedBPSetDist(v), -memoizedHausdorff(v)]
+  memoizedLevenshtein(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.levenshteinDistance, v, levenshtein)
+  evalDistance(v::Vector) = [-memoizedHausdorff(v), -memoizedLevenshtein(v)]
   println("memoized functions done")
   
   r = NSGA_II.main(alleles,
@@ -218,6 +239,9 @@ function main(popSize = 50,numIterations=50, alleleSize = 30)
                    mutationOperator)
   return (r, alleles)
 end
+#END
+#------------------------------------------------------------------------------
+
 
 
 
@@ -322,5 +346,6 @@ end
 
 #END
 #------------------------------------------------------------------------------
+
 
 
