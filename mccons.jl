@@ -235,9 +235,10 @@ function main(popSize = 250,numIterations = 100, alleleSize = 30)
                    popSize,
                    numIterations,
                    0.2,
-                   0.15,
+                   0.2,
                    crossoverOperator,
                    mutationOperator)
+  println("comparisons calculated : $(length(hausdorff)/2)")
   return (r, alleles)
 end
 #END
