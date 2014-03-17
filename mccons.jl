@@ -17,8 +17,9 @@
 #Output: a number of nondominated sets of n secondary structures, according
 #to the chosen distance functions. The output can then be filtered according to
 #desired usage
-
-
+#example: if the desired output is an alignment, one can run the algorithm,
+#get n sets of similar structures and then run n alignments and learn
+#which distance function makes more sense for the kind of alignement used.
 
 #END   readme
 #------------------------------------------------------------------------------
@@ -122,7 +123,7 @@ end
 
 
 #------------------------------------------------------------------------------
-#BEGIN optimizing functions
+#BEGIN optimizing functions (precalculate or memoize)
 
 
 #BEGIN precalculate
@@ -284,7 +285,7 @@ function writeResult{T<:String}(fileName::T, P::NSGA_II.population, alleles::Vec
     fit = ind[i].fitness
     s = fit[1]
     for j = 2:fitnessLen
-      s = string(s," ", fit[j])
+      s = string(s,",", fit[j])
     end
     #write the fitnesses on the same line
     println(f, s)
@@ -297,8 +298,7 @@ function writeResult{T<:String}(fileName::T, P::NSGA_II.population, alleles::Vec
       println(f, string(struct, " ", index))
       
     end
-    #write end symbol
-    println(f, "end")
+
   end
   
   close(f)
@@ -326,7 +326,7 @@ function extractFitness{T<:String}(fileName::T)
     if beginswith(lines[i], ">")
       index = chomp(lines[i][2:end])
       fitnesses = chomp(lines[i+1])
-      println(f2, string(index," ", fitnesses))
+      println(f2, string(index,",", fitnesses))
       i+=2
     else
       i+=1
