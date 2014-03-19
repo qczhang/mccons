@@ -374,4 +374,62 @@ end
 
 
 
+#BEGIN getSimilarAbstractShapes
+function getSimilarAbstractShapes{T<:String}(s::T)
+  #returns all abstract shapes at a distance of one bracket deletion
+  function bracketToPairs{T<:String}(s::T)
+    #does the same as finding the base pair set
+    #but on a level 5 abstract shape
+    stack = Int[]
+    result = (Int,Int)[]
+    for i = 1:length(s)
+      if s[i] == '['
+        push!(stack, i)
+      elseif s[i] == ']'
+        push!(result, (pop!(stack), i))
+      else
+        error("wrong format for the abstract shape")
+      end
+    end  
+    return sort(result)
+  end
+
+  function pairsToBrackets(pairs::Vector{(Int,Int)})
+    #base pair -> brackets
+    indexBrackets = (Int, Char)[]
+    for i = 1:length(pairs)
+      push!(indexBrackets, (pairs[i][1], '['))
+      push!(indexBrackets, (pairs[i][2], ']'))
+    end
+    return CharString(map(x->x[2], sort(indexBrackets, by = x->x[1])))
+  end
+
+  
+  pairs = bracketToPairs(s)
+  #
+  newSets = Vector{(Int,Int)}[]
+  #
+  for i = 1:length(pairs)
+    toAdd= (Int,Int)[]
+    for j = 1:length(pairs)
+      if j!= i
+        push!(toAdd, pairs[j])
+      end
+    end
+    push!(newSets, toAdd)
+  end
+  #
+  result = String[]
+  for i in newSets
+    bracket = pairsToBrackets(i)
+    if !(bracket in result) && bracket != ""
+      push!(result, bracket)
+    end
+  end
+  #
+  return result
+end
+#END
+
+
 end

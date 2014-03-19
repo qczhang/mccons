@@ -27,7 +27,7 @@
 #but are not at a distance of 1 insertion :(
 
 #try 2: use deletion
-function bracketPairs{T<:String}(s::T)
+function bracketToPairs{T<:String}(s::T)
   #does the same as finding the base pair set
   #but on a level 5 abstract shape
   stack = Int[]
@@ -44,9 +44,45 @@ function bracketPairs{T<:String}(s::T)
   return sort(result)
 end
 
+
+
+function pairsToBrackets(pairs::Vector{(Int,Int)})
+  #base pair -> brackets
+  indexBrackets = (Int, Char)[]
+  for i = 1:length(pairs)
+    push!(indexBrackets, (pairs[i][1], '['))
+    push!(indexBrackets, (pairs[i][2], ']'))
+  end
+  return CharString(map(x->x[2], sort(indexBrackets, by = x->x[1])))
+end
+
+
+
 function getAtOneDeletion{T<:String}(s::T)
   #returns all abstract shapes at a distance of one bracket deletion
-  pairs = bracketPairs(s)
-  \todooooo
-  
-  
+  pairs = bracketToPairs(s)
+  #
+  newSets = Vector{(Int,Int)}[]
+  #
+  for i = 1:length(pairs)
+    toAdd= (Int,Int)[]
+    for j = 1:length(pairs)
+      if j!= i
+        push!(toAdd, pairs[j])
+      end
+    end
+    push!(newSets, toAdd)
+  end
+  #
+  result = String[]
+  for i in newSets
+    bracket = pairsToBrackets(i)
+    if !(bracket in result) && bracket != ""
+      push!(result, bracket)
+    end
+  end
+  #
+  return result
+end
+
+
