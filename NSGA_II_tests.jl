@@ -325,7 +325,7 @@ function test_all()
 end
 #END test_all
 
-#test_all()
+test_all()
 
 
 #END   unit tests
