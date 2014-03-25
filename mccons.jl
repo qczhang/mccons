@@ -279,10 +279,19 @@ function main(moleculeDict = IREs, popSize = 250, numIterations = 100, alleleSiz
   const levenshtein = Dict{(String,String),Number}()
   const mountain = Dict{(String, String), Number}()
   
+  #do squared error function
+  squaredHausdorff(s1, s2) = (RNA_2D.compareHausdorff(s1, s2))^2
+  squaredLevenshtein(s1, s2) = (RNA_2D.levenshteinDistance(s1, s2))^2
+  squaredMountain(s1, s2) = (RNA_2D.compareMountainDistance(s1, s2))^2
+  
   #memoizedBPSetDist(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareBPSet, v, bpset)
-  memoizedHausdorff(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareHausdorff, v, hausdorff)
-  memoizedLevenshtein(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.levenshteinDistance, v, levenshtein)
-  memoizedMountain(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareMountainDistance, v, mountain)
+#   memoizedHausdorff(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareHausdorff, v, hausdorff)
+#   memoizedLevenshtein(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.levenshteinDistance, v, levenshtein)
+#   memoizedMountain(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareMountainDistance, v, mountain)
+  
+  memoizedHausdorff(v::Vector{RNA_2D.structure}) = memoizeDist(squaredHausdorff, v, hausdorff)
+  memoizedLevenshtein(v::Vector{RNA_2D.structure}) = memoizeDist(squaredLevenshtein, v, levenshtein)
+  memoizedMountain(v::Vector{RNA_2D.structure}) = memoizeDist(squaredMountain, v, mountain)
   
   #create the evaluation vector
   evalDistance(v::Vector) = [-memoizedLevenshtein(v), -memoizedHausdorff(v), -memoizedMountain(v)]
