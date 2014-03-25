@@ -45,6 +45,36 @@ require("geneticAlgorithmOperators")
 
 #------------------------------------------------------------------------------
 #BEGIN data
+yeastTRNAs = {
+"tRNA-ASN" =>
+"GACUCCAUGGCCAAGUUGGUUAAGGCGUGCGACUGUUAAUCGCAAGAUCGUGAGUUCAACCCUCACUGGGGUCGCCA",
+"tRNA-GLY" =>
+"GCGCAAGUGGUUUAGUGGUAAAAUCCAACGUUGCCAUCGUUGGGCCCCGGUUCGAUUCCGGGCUUGCGCACCA",
+"tRNA-ILE" =>
+"GGUCUCUUGGCCCAGUUGGUUAAGGCACCGUGCUAAUAACGCGGGGAUCAGCGGUUCGAUCCCGCUAGAGACCACCA",
+"tRNA-LYS" =>
+"UCCUUGUUAGCUCAGUUGGUAGAGCGUUCGGCUUUUAACCGAAAUGUCAGGGGUUCGAGCCCCCUAUGAGGAGCCA",
+"tRNA-MET" =>
+"GCUUCAGUAGCUCAGUAGGAAGAGCGUCAGUCUCAUAAUCUGAAGGUCGAGAGUUCGAACCUCUCCUGGAGCACCA",
+"tRNA-THR" =>
+"GCUUCUAUGGCCAAGUUGGUAAGGCGCCACACUAGUAAUGUGGAGAUCAUCGGUUCAAAUCCGAUUGGAAGCACCA",
+"tRNA-TRP" =>
+"GAAGCGGUGGCUCAAUGGUAGAGCUUUCGACUCCAAAUCGAAGGGUUGCAGGUUCAAUUCCUGUCCGUUUCACCA",
+"tRNA-ALA" =>
+"GGGCGUGUGGCGUAGUCGGUAGCGCGCUCCCUUAGCAUGGGAGAGGUCUCCGGUUCGAUUCCGGACUCGUCCACCA",
+"tRNA-ARG" =>
+"UUCCUCGUGGCCCAAUGGUCACGGCGUCUGGCUACGAACCAGAAGAUUCCAGGUUCAAGUCCUGGCGGGGAAGCCA",
+"tRNA-ASP" =>
+"UCCGUGAUAGUUUAAUGGUCAGAAUGGGCGCUUGUCGCGUGCCAGAUCGGGGUUCAAUUCCCCGUCGCGGAGCCA",
+"tRNA-GLU" =>
+"UCCGAUAUAGUGUAACGGCUAUCACAUCACGCUUUCACCGUGGAGACCGGGGUUCGACUCCCCGUAUCGGAGCCA",
+"tRNA-HIS" =>
+"GGCCAUCUUAGUAUAGUGGUUAGUACACAACAUUGUGGCUGUUGAAACCCUGGUUCGAUUCUAGGAGGUGGCACCA",
+"tRNA-PHE" =>
+"GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA",
+"tRNA-VAL" =>
+"GGUUUCGUGGUCUAGUCGGUUAUGGCAUCUGCUUAACACGCAGAACGUCCCCAGUUCGAUCCUGGGCGAAAUCACCA"}
+
 IREs = {
 "AY112742_1_12_41" => "GUcCUGCUUCAACAGUGCUUGAACGGaAC",
 "BC019840_1_11_40" => "GUcUUGCUUCAACAGUGUUUGAACGGaAC",
@@ -75,6 +105,30 @@ IREs = {
 "M12120_1_24_53" => "GUUCUUGCUUCAACAGUGUUUGAACGGAAC" ,
 "L39879_1_1190_1219" => "GUaCUUGCUUCAACAGUGUUUGAACGGaAC",
 "J02741_1_400_429" => "aUCUUGCUUCAACAGUGUUUGGACGGAa" }
+
+#mock testing
+mock = Dict{String, String}()
+mock["a"] = "AAAAAAAAAATTTTTTTTTT"
+mock["b"] = "TTTTTTTTTTAAAAAAAAAA"
+mock["c"] = "ATATATATATATATATATAT"
+mock["d"] = "TATATATATATATATATATA"
+
+#same length IREs
+IREs30 = Dict{String,String}()
+for i in keys(IREs)
+  if length(IREs[i])==30
+    IREs30[i] = IREs[i]
+  end
+end
+
+#same length tRNA
+yeastTRNAs76 = Dict{String, String}()
+for i in keys(yeastTRNAs)
+  if length(yeastTRNAs[i])==76
+    yeastTRNAs76[i] = yeastTRNAs[i]
+  end
+end
+
 #END
 #------------------------------------------------------------------------------
 
@@ -213,21 +267,25 @@ end
 
 #------------------------------------------------------------------------------
 #BEGIN main function
-function main(popSize = 250,numIterations = 100, alleleSize = 30)
+function main(moleculeDict = IREs, popSize = 250, numIterations = 100, alleleSize = 30)
   mutationOperator = geneticAlgorithmOperators.uniformMutate
   crossoverOperator = geneticAlgorithmOperators.uniformCrossover
   
-  alleles = foldAll(IREs, alleleSize)
+  alleles = foldAll(moleculeDict, alleleSize)
   
   #memoize the results
   #const bpset = Dict{(String,String), Number}()
   const hausdorff = Dict{(String,String), Number}()
-  const levenshtein = Dict{(String,String), Number}()
+  const levenshtein = Dict{(String,String),Number}()
+  const mountain = Dict{(String, String), Number}()
   
   #memoizedBPSetDist(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareBPSet, v, bpset)
   memoizedHausdorff(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareHausdorff, v, hausdorff)
   memoizedLevenshtein(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.levenshteinDistance, v, levenshtein)
-  evalDistance(v::Vector) = [-memoizedHausdorff(v), -memoizedLevenshtein(v)]
+  memoizedMountain(v::Vector{RNA_2D.structure}) = memoizeDist(RNA_2D.compareMountainDistance, v, mountain)
+  
+  #create the evaluation vector
+  evalDistance(v::Vector) = [-memoizedLevenshtein(v), -memoizedHausdorff(v), -memoizedMountain(v)]
   println("memoized functions done")
   
   r = NSGA_II.main(alleles,

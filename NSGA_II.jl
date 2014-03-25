@@ -238,9 +238,10 @@ function crowdingDistance(P::population,
     push!(sortedByObjective, tmp)
   end
   
+  #\todoooo fix error Inf - Inf = NaN or 0 / 0
   #get the range of the fitnesses for each objective
   rangeOfObjective = map(x->(x[1]-x[2]), zip(maxOfObjective, minOfObjective))
-  
+
   #assign infinite crowding distance to maximum and
   #minimum fitness of each objective
   map(x->fitnessToCrowding[x[end]] = (frontID, Inf), sortedByObjective)
@@ -249,10 +250,26 @@ function crowdingDistance(P::population,
   #assign crowding distances to the other
   #fitness vectors for each objectives
   for i = 1:numOfObjectives
-    for j = 2:(numFitness-1)
-      previousValue = fitnessToCrowding[sortedByObjective[i][j]][2]
-      toAdd = ((sortedByObjective[i][j-1][i] - sortedByObjective[i][j+1][i])/rangeOfObjective[i])
-      fitnessToCrowding[sortedByObjective[i][j]] = (frontID, (previousValue + toAdd))
+    #edge case here! if range == 0, 0 / 0 will give NaN
+    if rangeOfObjective[i] != 0
+      for j = 2:(numFitness-1)
+        previousValue = fitnessToCrowding[sortedByObjective[i][j]][2]
+        toAdd = ((sortedByObjective[i][j-1][i] - sortedByObjective[i][j+1][i])/rangeOfObjective[i])
+        @assert toAdd != NaN
+        fitnessToCrowding[sortedByObjective[i][j]] = (frontID, (previousValue + toAdd))
+      end
+    end
+  end
+  
+  #test that all are valid numbers
+  for i in keys(fitnessToCrowding)
+    val = fitnessToCrowding[i]
+    if val[1]==NaN
+      println(fitnessToCrowding)
+    elseif val[2] == NaN
+      println("###################################################BUG BUG#######")
+      println(fitnessToCrowding)
+      println("#################################################################")
     end
   end
   
@@ -374,7 +391,7 @@ function UFTournSelection(P::population)
     chosenFitnesses = Vector[]
     i = 1
     while i < k
-      #crowdedCompare returns an offset(0 if first solution is better, 1 otherwise)
+      #crowdedCompare returns an offset (0 if first solution is better, 1 otherwise)
       selectedIndex = i + crowdedCompare(frontAndCrowding[i], frontAndCrowding[i+1])
       push!(chosenFitnesses, candidateFitnesses[selectedIndex])
       i += 2
@@ -592,6 +609,16 @@ function main(alleles::Vector,
     parentPopulation = population(mergedPopulation.individuals[parentsIndices],
                                   mergedPopulation.distances)
     
+    
+    #print the dict of distances
+#     for dist in keys(parentPopulation.distances)
+#       print("[")
+#       print(dist)
+#       print("]")
+#       print(" : ")
+#       print(parentPopulation.distances[dist])
+#       println("")
+#     end
     #we make a tournament selection to select children
     #the templates are actual parents
     childrenTemplates = UFTournSelection(parentPopulation)
@@ -614,7 +641,7 @@ function main(alleles::Vector,
     
   end
   
-  return HallOfFame
+  return [HallOfFame, previousPopulation]
 end
 #END
 
@@ -651,7 +678,7 @@ end
 
 
 #BEGIN crowdedCompare
-function crowdedCompare(valueA::(Int, FloatingPoint), 
+function crowdedCompare(valueA::(Int, FloatingPoint),
                         valueB::(Int, FloatingPoint))
   #crowded comparison operator
   @assert valueA[1]>0
@@ -783,10 +810,6 @@ function printResult(P::population)
   mi2 = minimum(map(x->x.fitness[2], P.individuals))
   ma2 = maximum(map(x->x.fitness[2], P.individuals))
   
-#   println("max objective 1 = $ma1")
-#   println("min objective 1 = $mi1\n")
-#   println("max objective 2 = $ma2")
-#   println("min objective 2 = $mi2")
 end
 #END
 

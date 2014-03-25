@@ -136,6 +136,8 @@ function compareMountainDistance(m1::Vector{Int}, m2::Vector{Int})
   return mapreduce(absdiff, +, zip(m1, m2))
 end
 
+compareMountainDistance(s1::structure, s2::structure) = compareMountainDistance(s1.mountain, s2.mountain)
+
 
 
 function compareBPSet(bp1::Vector{(Int,Int)}, bp2::Vector{(Int,Int)})
