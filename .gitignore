@@ -1,7 +1,6 @@
 *.aux
 *.log
 *.pdf
-f32
-src/
-tables/
+messing_around/f32
+messing_around/tables
 .gitignore.save
