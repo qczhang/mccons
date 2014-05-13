@@ -2,36 +2,114 @@
 
 require("RNA_2D.jl")
 
-yeastTRNAs = {
-"tRNA-ASN" =>
+tRNAs = {
+"ASN" =>
 "GACUCCAUGGCCAAGUUGGUUAAGGCGUGCGACUGUUAAUCGCAAGAUCGUGAGUUCAACCCUCACUGGGGUCGCCA",
-"tRNA-GLY" =>
+"GLY" =>
 "GCGCAAGUGGUUUAGUGGUAAAAUCCAACGUUGCCAUCGUUGGGCCCCGGUUCGAUUCCGGGCUUGCGCACCA",
-"tRNA-ILE" =>
+"ILE" =>
 "GGUCUCUUGGCCCAGUUGGUUAAGGCACCGUGCUAAUAACGCGGGGAUCAGCGGUUCGAUCCCGCUAGAGACCACCA",
-"tRNA-LYS" =>
+"LYS" =>
 "UCCUUGUUAGCUCAGUUGGUAGAGCGUUCGGCUUUUAACCGAAAUGUCAGGGGUUCGAGCCCCCUAUGAGGAGCCA",
-"tRNA-MET" =>
+"MET" =>
 "GCUUCAGUAGCUCAGUAGGAAGAGCGUCAGUCUCAUAAUCUGAAGGUCGAGAGUUCGAACCUCUCCUGGAGCACCA",
-"tRNA-THR" =>
+"THR" =>
 "GCUUCUAUGGCCAAGUUGGUAAGGCGCCACACUAGUAAUGUGGAGAUCAUCGGUUCAAAUCCGAUUGGAAGCACCA",
-"tRNA-TRP" =>
+"TRP" =>
 "GAAGCGGUGGCUCAAUGGUAGAGCUUUCGACUCCAAAUCGAAGGGUUGCAGGUUCAAUUCCUGUCCGUUUCACCA",
-"tRNA-ALA" =>
+"ALA" =>
 "GGGCGUGUGGCGUAGUCGGUAGCGCGCUCCCUUAGCAUGGGAGAGGUCUCCGGUUCGAUUCCGGACUCGUCCACCA",
-"tRNA-ARG" =>
+"ARG" =>
 "UUCCUCGUGGCCCAAUGGUCACGGCGUCUGGCUACGAACCAGAAGAUUCCAGGUUCAAGUCCUGGCGGGGAAGCCA",
-"tRNA-ASP" =>
+"ASP" =>
 "UCCGUGAUAGUUUAAUGGUCAGAAUGGGCGCUUGUCGCGUGCCAGAUCGGGGUUCAAUUCCCCGUCGCGGAGCCA",
-"tRNA-GLU" =>
+"GLU" =>
 "UCCGAUAUAGUGUAACGGCUAUCACAUCACGCUUUCACCGUGGAGACCGGGGUUCGACUCCCCGUAUCGGAGCCA",
-"tRNA-HIS" =>
+"HIS" =>
 "GGCCAUCUUAGUAUAGUGGUUAGUACACAACAUUGUGGCUGUUGAAACCCUGGUUCGAUUCUAGGAGGUGGCACCA",
-"tRNA-PHE" =>
+"PHE" =>
 "GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA",
-"tRNA-VAL" =>
+"VAL" =>
 "GGUUUCGUGGUCUAGUCGGUUAUGGCAUCUGCUUAACACGCAGAACGUCCCCAGUUCGAUCCUGGGCGAAAUCACCA"}
 
+
+
+tRNAconsensus = {
+"ASN" =>
+"(((((((..((((.........))))((((((((...))))))))....((((((...)..))))))))))))....",
+"GLY" =>
+"(((((((..(((((.....)))))((((((((...))))))))..((((((...)..))))))))))))....",
+"ILE" =>
+"(((((((..(((((.......)))))((((((((...))))))))....((((((...)..))))))))))))....",
+"LYS" =>
+"(((((((..(((((......)))))((((((((...))))))))....((((((...)..))))))))))))....",
+"MET" =>
+"(((((((..(((((......)))))((((((((...))))))))....((((((...)..))))))))))))....",
+"THR" =>
+"(((((((..((((........))))((((((((...))))))))....((((((...)..))))))))))))....",
+"TRP" =>
+"(((((((..(((((.....)))))((((((((...))))))))....((((((...)..))))))))))))....",
+"ALA" =>
+"(((((((..(((((......)))))(((((((.....)))))))....((((((...)..))))))))))))....",
+"ARG" =>
+"(((((((..(((((......)))))((((((((...))))))))....((((((...)..))))))))))))....",
+"ASP1" =>
+"(((((((..(((((......)))))((((((.......))))))...((((((...)..))))))))))))....",
+"ASP2" =>
+"(((((((..(((((......)))))(((((((.....)))))))...((((((...)..))))))))))))....",
+"GLU" =>
+"(((((((..(((((......)))))((((((((...))))))))...((((((...)..))))))))))))....",
+"HIS" =>
+"((((((((..(((((......)))))(((((((.....)))))))...((((((...)..)))))))))))).)..",
+"PHE1" =>
+"(((((((..((((........))))(((((((.....)))))))....((((((...)..))))))))))))....",
+"PHE2" =>
+"(((((((..(((((......)))))((((((.(....)))))))....((((((...)..))))))))))))....",
+"VAL" =>
+"(((((((..(((((.......)))))((((((((...))))))))....((((((...)..))))))))))))...."}
+
+
+rRNA5S = {
+"Ecoli1" =>
+"UGCCUGGCGGCCGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAU",
+"Ecoli2" =>
+"UGCCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCUCAUGCGAGAGUAGGGAACUGCCAGGCAU",
+"Ecoli3" =>
+"UGCCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAU",
+"Ecoli4" =>
+"UGUCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGACAU",
+"Ecoli5" =>
+"UGCCUGGCGGCCUUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAU",
+"Ecoli6" =>
+"UGUCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGACUCCCCAUGCGAGAGUAGGGAACUGCCAGACAU",
+"Ecoli10" =>
+"UGUCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCUCAUGCGAGAGUAGGGAACUGCCAUGCAU",
+"Ecoli11" =>
+"UGCCUGGCGGCAGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGGCAUCA",
+"Ecoli14" =>
+"UGCCUGGCGGCCGUAGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAGACAU",
+}
+
+rRNA5Sconsensus = {
+"Ecoli1" =>
+"((((((((((.(.(((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).)))))))))))).",
+"Ecoli2" =>
+"((((((((((.(.(((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).)))))))))))).",
+"Ecoli3" =>
+"((((((((((.(.(((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).)))))))))))).",
+"Ecoli4" =>
+"((((((((((.(.(((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).)))))))))))).",
+"Ecoli5" =>
+"(((((((((((.(.((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).)))))))))))).",
+"Ecoli6" =>
+"((((((((((.(.(((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).)))))))))))).",
+"Ecoli10" =>
+"((((((((((.(.(((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).)))))))))))).",
+"Ecoli11" =>
+"((((((((((.(.(((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...))))))))))))))))).))))))))))))...",
+"Ecoli14" =>
+"((((((((((.(..((((((((((((((((((((((((.....))))))))))).)))))))))).)))(((((((((((((((((...)))))))))))))))))..))))))))))).",
+}
 
 
 function callFlashFold(sequence::String, ft::Int)
