@@ -1,0 +1,58 @@
+>tRNA-ASN
+GACUCCAUGGCCAAGUUGGUUAAGGCGUGCGACUGUUAAUCGCAAGAUCGUGAGUUCAACCCUCACUGGGGUCGCCA
+(((((((..((((.........))))((((((((...))))))))....((((((...)..)))))))))))).... ( 2nd)
+...............xx..xx.............xxx..........x.............................
+>tRNA-GLY
+GCGCAAGUGGUUUAGUGGUAAAAUCCAACGUUGCCAUCGUUGGGCCCCGGUUCGAUUCCGGGCUUGCGCACCA
+(((((((..(((((.....)))))((((((((...))))))))..((((((...)..)))))))))))).... ( 2nd)
+........x......x..x.............xxx......................................
+>tRNA-ILE
+GGUCUCUUGGCCCAGUUGGUUAAGGCACCGUGCUAAUAACGCGGGGAUCAGCGGUUCGAUCCCGCUAGAGACCACCA
+(((((((..(((((.......)))))((((((((...))))))))....((((((...)..)))))))))))).... ( 5th)
+........x......xx..xx.............xxx..........x.............................
+>tRNA-LYS
+UCCUUGUUAGCUCAGUUGGUAGAGCGUUCGGCUUUUAACCGAAAUGUCAGGGGUUCGAGCCCCCUAUGAGGAGCCA
+(((((((..(((((......)))))((((((((...))))))))....((((((...)..)))))))))))).... ( 1st)
+...............xx..x.............xxx..........x.............................
+>tRNA-MET
+GCUUCAGUAGCUCAGUAGGAAGAGCGUCAGUCUCAUAAUCUGAAGGUCGAGAGUUCGAACCUCUCCUGGAGCACCA
+(((((((..(((((......)))))((((((((...))))))))....((((((...)..)))))))))))).... ( 5th)
+...............x.................xxx..........x.............................
+>tRNA-THR
+GCUUCUAUGGCCAAGUUGGUAAGGCGCCACACUAGUAAUGUGGAGAUCAUCGGUUCAAAUCCGAUUGGAAGCACCA
+(((((((..((((........))))((((((((...))))))))....((((((...)..)))))))))))).... ( 1st)
+...............xx..x.............xxx..........x.............................
+>tRNA-TRP
+GAAGCGGUGGCUCAAUGGUAGAGCUUUCGACUCCAAAUCGAAGGGUUGCAGGUUCAAUUCCUGUCCGUUUCACCA
+(((((((..(((((.....)))))((((((((...))))))))....((((((...)..)))))))))))).... ( 1st)
+........x......x..x.............xxx..........x.............................
+>tRNA-ALA
+GGGCGUGUGGCGUAGUCGGUAGCGCGCUCCCUUAGCAUGGGAGAGGUCUCCGGUUCGAUUCCGGACUCGUCCACCA
+(((((((..(((((......)))))(((((((.....)))))))....((((((...)..)))))))))))).... ( 60th)
+........x......x...x.............xxxx.........x.............................
+>tRNA-ARG
+UUCCUCGUGGCCCAAUGGUCACGGCGUCUGGCUACGAACCAGAAGAUUCCAGGUUCAAGUCCUGGCGGGGAAGCCA
+(((((((..(((((......)))))((((((((...))))))))....((((((...)..)))))))))))).... ( 48th)
+........x......x..x..............xxx..........x.............................
+>tRNA-ASP
+UCCGUGAUAGUUUAAUGGUCAGAAUGGGCGCUUGUCGCGUGCCAGAUCGGGGUUCAAUUCCCCGUCGCGGAGCCA
+(((((((..(((((......)))))((((((.......))))))...((((((...)..)))))))))))).... 2TRA TP FP FN Mthw
+(((((((..(((((......)))))(((((((.....)))))))...((((((...)..)))))))))))).... ( 5th) 24 1 0 98.0
+...............x..x..............xxxx......................................
+>tRNA-GLU
+UCCGAUAUAGUGUAACGGCUAUCACAUCACGCUUUCACCGUGGAGACCGGGGUUCGACUCCCCGUAUCGGAGCCA
+(((((((..(((((......)))))((((((((...))))))))...((((((...)..)))))))))))).... ( 55th)
+...................x.............xxx.......................................
+>tRNA-HIS
+GGCCAUCUUAGUAUAGUGGUUAGUACACAACAUUGUGGCUGUUGAAACCCUGGUUCGAUUCUAGGAGGUGGCACCA
+((((((((..(((((......)))))(((((((.....)))))))...((((((...)..)))))))))))).).. ( 13th)
+................x..xx.............xxxx......................................
+>tRNA-PHE
+GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA
+(((((((..((((........))))(((((((.....)))))))....((((((...)..)))))))))))).... 4TRA TP FP FN Mthw
+(((((((..(((((......)))))((((((.(....)))))))....((((((...)..)))))))))))).... ( 336th) 23 2 1 93.9
+...............xx................xxxx.......................................
+>tRNA-VAL
+GGUUUCGUGGUCUAGUCGGUUAUGGCAUCUGCUUAACACGCAGAACGUCCCCAGUUCGAUCCUGGGCGAAAUCACCA
+(((((((..(((((.......)))))((((((((...))))))))....((((((...)..)))))))))))).... ( 11th)
+........x......x...xx.............xxx..........x.............................
