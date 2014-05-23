@@ -20,8 +20,7 @@
 
 
 
-require("NSGA_II")
-require("geneticAlgorithmOperators")
+require("NSGA_II.jl")
 using Base.Test
 
 
@@ -294,8 +293,8 @@ function test_main(n::Int)
   
   evalF(x) = [f(x), g(x)]
   
-  mutationOperator = geneticAlgorithmOperators.uniformMutate
-  crossoverOperator = geneticAlgorithmOperators.uniformCrossover
+  mutationOperator = NSGA_II.uniformMutate
+  crossoverOperator = NSGA_II.uniformCrossover
   x =  NSGA_II.main(ALLELES,
                     evalF,
                     100,

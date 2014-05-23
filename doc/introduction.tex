@@ -3,7 +3,7 @@
 \usepackage[pdftex]{graphicx}
 \usepackage{todonotes}
 
-\usepackage{algpseudocode}
+
 %\usepackage{algorithm2e}
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 
@@ -18,7 +18,7 @@
 
 \HRule \\[0.4cm]
 
-{\huge Multiobjective consensus structure search
+{\huge Multiobjective 2D RNA structure similarity search
 \HRule \\[0.4cm]}
 \vfill
 \emph{Authors:}\\
@@ -33,12 +33,83 @@ Dr.~François \textsc{Major}
 \end{titlepage}
 
 
-% first section, the introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%ABSTRACT%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{ABSTRACT}
+\subsection*{Summary}
+\noindent
+MC-Cons explores RNA secondary structure suboptimals
+in the aim of finding sets of similar structures
+according to multiple distance functions.
+
+
+\subsection*{Availability}
+Source code, documentation and benchmark
+downloadable from https://github.com/major-lab/mccons.
+MC-Cons is freely licensed under MIT license.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%INTRODUCTION%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{INTRODUCTION}
 
-\noindent
-\section*{USE CASE}
-\subsection*{Consensus sequence search (mccons)}
+An interesting problem in molecular structure prediction is to find structures
+that can explain a particular cellular function.
+
+This problem can be solved with more ease if a set of molecules exhibiting
+the same function is available, assuming they do have similar structures.
+
+Under the hypothesis that they do share similar structures that explains the common
+function, the problem of finding it comes into play.
+
+To find similar structures, we need to define the idea of similarity. In the case
+of 2D RNA structure, tons of alternatives measures (distance functions) are available
+in the litterature.
+
+The developpement of so many distance functions is probably explained
+by the poor performance of simple measures such as the base pair set distance or the edit
+distance. Since there is no absolute 
+
+
+
+
+for a set of sequences encoding some
+structurally active RNA (one could think of the tRNAs, IREs, etc.).
+This could be done with the goal of finding a structural alignment,
+an indicator of function, or simply to use the information of many
+sequences, under the hypothesis that the function is linked to the structure.
+
+
+We find that this approach is somewhat flawed in that each distance function
+comes with some weakness, especially the simple ones.
+Instead of developping a brand new innovative distance function for 
+2D RNA comparison, we opted for using many existing ones at the same time.
+The intuition is that when using multiple distance functions, it is likely that
+if their choice is well done, they will compensate for each other in 
+interesting ways.
+Another aspect of this work is that 
+
+The software is based on the nondominated sorting multiobjective algorithm (NSGA-II).
+This, along with distance functions and 
+
+
+This is why this simple framework was developped.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%USAGE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{USAGE}
+The software takes as input a fasta file of predicted RNA 2D structures in Vienna format
+(each can have many, but too many will hurt the result, as the exploration space grows exponentially).
+
+Multiple distance functions can be selected (many simple ones are already implemented) and
+
+
+\section*{PERFORMANCE}
+
+
+
+\subsection*{Similar structure search}
+
+Given multiple structures for each molecule and 
+
+
 \begin{enumerate}
   \item There is a family of multiple RNA sequences who share a common function.
   \item There is a reason to suspect that a common structure could explain the function. 
@@ -145,28 +216,28 @@ sorting the last population into non dominated fronts, and then taking the domin
 
 % Reproduce the pseudocode with the 
 % https://en.wikibooks.org/wiki/LaTeX/Algorithms_and_Pseudocode
-\begin{algorithmic}
-  \Procedure{ NSGA-IIR }{ TODO input }
-  \State Initialize $P_1$ and $Q_1$
-  \For{$t = 1..NGEN$ }
-    \State $R_t = P_t \cup Q_t$
-    \State $F = $ \Call{NONDOMINATEDSORT}{$R_t$}
-    \State $P_{t+1} = \{\}$
-    \State $j = 1$
-    \While{ $|P_{t+1}| + |F_j| <= N$ }
-      \State $F =\{f(i) | i \in F_j\}$
-      \State \Call{CROWDINGDISTANCE}{$F$}
-      \State $P_{t+1} += F_j$
-      \State $j+=1$
-    \EndWhile
-    
-    \State $k = N - |P_{t+1}|$
-    \State $P_{t+1} = P_{t+1} \cup$ \Call{LASTFRONTSELECTION}{$F_j, k$}
-    \State $P'_{t+1} =$ \Call{UFTOURNSELECTION}{$P_{t+1}, N$}
-    \State $Q_{t+1} =$ \Call{GENERATEOFFSPRING}{$P'_{t+1}$}
-  \EndFor
-  \EndProcedure
-\end{algorithmic}
+% \begin{algorithmic}
+%   \Procedure{ NSGA-IIR }{ TODO input }
+%   \State Initialize $P_1$ and $Q_1$
+%   \For{$t = 1..NGEN$ }
+%     \State $R_t = P_t \cup Q_t$
+%     \State $F = $ \Call{NONDOMINATEDSORT}{$R_t$}
+%     \State $P_{t+1} = \{\}$
+%     \State $j = 1$
+%     \While{ $|P_{t+1}| + |F_j| <= N$ }
+%       \State $F =\{f(i) | i \in F_j\}$
+%       \State \Call{CROWDINGDISTANCE}{$F$}
+%       \State $P_{t+1} += F_j$
+%       \State $j+=1$
+%     \EndWhile
+%     
+%     \State $k = N - |P_{t+1}|$
+%     \State $P_{t+1} = P_{t+1} \cup$ \Call{LASTFRONTSELECTION}{$F_j, k$}
+%     \State $P'_{t+1} =$ \Call{UFTOURNSELECTION}{$P_{t+1}, N$}
+%     \State $Q_{t+1} =$ \Call{GENERATEOFFSPRING}{$P'_{t+1}$}
+%   \EndFor
+%   \EndProcedure
+% \end{algorithmic}
 
 
 \section*{TRIE EXACT VERSION}
