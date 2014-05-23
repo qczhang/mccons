@@ -1,5 +1,5 @@
 module NSGA_II
-
+using ProgressMeter
 
 #------------------------------------------------------------------------------
 #BEGIN readme
@@ -584,7 +584,7 @@ function addToHallOfFame(P::population,
   for i in firstFront
     push!(HallOfFame.individuals, i)
   end
-  #println("update length = $(length(HallOfFame.individuals))")
+
   
   #elmiminate duplicates (since it is elitist, same individuals may reappear)
   HallOfFame.individuals = unique(HallOfFame.individuals)
@@ -636,6 +636,10 @@ function main(alleles::Vector,
   @assert populationSize > 0
   @assert iterations > 0
   
+  #progress bar stuff
+  p = Progress(iterations, 1, "Generating solutions", 50)
+  
+  
   #main loop of the NSGA-II algorithm
   
   #create hall of fame to save the best individuals
@@ -657,35 +661,47 @@ function main(alleles::Vector,
     #add the best individuals to the hall of fame
     addToHallOfFame(mergedPopulation, fronts[1], HallOfFame)
     
-    #separate last front from rest, it is treated differently with
-    #lastFrontSelection function
-    indexOfLastFront = length(fronts)
-    lastFront = fronts[indexOfLastFront]
-    fronts = fronts[1: (indexOfLastFront - 1)]
     
-    #calculate the crowding distances for all but the last front and 
-    #update the mergedPopulation.distance
-    for j = 1:length(fronts)
-      front_j = fronts[j]
-      crowdingDistance(mergedPopulation, front_j, j, true)
+    if length(fronts) == 1 || length(fronts[1]) >= populationSize
+        crowdingDistance(mergedPopulation, fronts[1], 1, true)
+        selectedFromLastFront = lastFrontSelection(mergedPopulation,
+                                                   fronts[1],
+                                                   populationSize)
+        #put the indices of the individuals in all 
+        #fronts that were selected as parents
+        parentsIndices = selectedFromLastFront
+    else
+        #separate last front from rest, it is treated differently with
+        #lastFrontSelection function
+        indexOfLastFront = length(fronts)
+        lastFront = fronts[indexOfLastFront]
+        fronts = fronts[1: (indexOfLastFront - 1)]
+        
+        #calculate the crowding distances for all but the last front and 
+        #update the mergedPopulation.distance
+        for j = 1:length(fronts)
+            front_j = fronts[j]
+            crowdingDistance(mergedPopulation, front_j, j, true)
+        end
+        
+        #calculate how many individuals are left to 
+        #select (there's n-k in the previous fronts)
+        k = populationSize - length(reduce(vcat, fronts))
+
+        
+        #find the indices of the k individuals we need from the last front
+        selectedFromLastFront = lastFrontSelection(mergedPopulation, 
+                                                lastFront,
+                                                k)
+        
+        #update the crowding distance on the last front
+        crowdingDistance(mergedPopulation, selectedFromLastFront, indexOfLastFront, true)
+        
+        #put the indices of the individuals in all 
+        #fronts that were selected as parents
+        parentsIndices = vcat(reduce(vcat, fronts), selectedFromLastFront)
     end
-    
-    #calculate how many individuals are left to 
-    #select (there's n-k in the previous fronts)
-    k = populationSize - length(reduce(vcat, fronts))
-    
-    #find the indices of the k individuals we need from the last front
-    selectedFromLastFront = lastFrontSelection(mergedPopulation, 
-                                               lastFront,
-                                               k)
-    
-    #update the crowding distance on the last front
-    crowdingDistance(mergedPopulation, selectedFromLastFront, indexOfLastFront, true)
-    
-    #put the indices of the individuals in all 
-    #fronts that were selected as parents
-    parentsIndices = vcat(reduce(vcat, fronts), selectedFromLastFront)
-    
+
     #--------------------------------------------------------------------
     
     #at this point, we have all we need to create the next population:
@@ -723,8 +739,7 @@ function main(alleles::Vector,
     mergedPopulation = population(vcat(nextPopulation.individuals, previousPopulation.individuals))
     previousPopulation = nextPopulation
     
-    println("iteration $i done")
-    
+    next!(p)
   end
   
   return [HallOfFame, previousPopulation]

@@ -210,8 +210,8 @@ end
 #------------------------------------------------------------------------------
 #BEGIN main function
 function main(moleculeDict = IREs, popSize = 250, numIterations = 100, alleleSize = 30)
-  mutationOperator = geneticAlgorithmOperators.uniformMutate
-  crossoverOperator = geneticAlgorithmOperators.uniformCrossover
+  mutationOperator = NSGA_II.uniformMutate
+  crossoverOperator = NSGA_II.uniformCrossover
   
   alleles = foldAll(moleculeDict, alleleSize)
   
@@ -259,7 +259,7 @@ end
 #------------------------------------------------------------------------------
 #BEGIN io
 
-function writeResult{T<:String}(fileName::T, P::NSGA_II.population, alleles::Vector)
+function writeResult{T<:String}(fileName::T, P, alleles::Vector)
   #will not rewrite files in theory
   #assert that the file is not already in the local directory
   listDir = readdir()

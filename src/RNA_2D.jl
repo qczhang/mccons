@@ -3,7 +3,7 @@ module RNA_2D
 #BEGIN readme
 
 # -structure type definition
-# -structure validation (Vienna dot bracket), no "()"
+# -structure validation (Vienna dot bracket)
 # -conversion between representations (dot bracket, mountain, base pair set)
 # -distance functions (mountain, base pair set symmetric difference, hausdorff)
 # -RNAshapes 
@@ -58,7 +58,6 @@ end
 function testDotBracket(dotBracket::String)
   #verifies Vienna dot-bracket for "()" and unbalanced structure
   counter = 0
-  lastchar = '('
   for i in dotBracket
     #add to structure
     if(i=='(')
@@ -72,11 +71,6 @@ function testDotBracket(dotBracket::String)
     if(counter < 0)
       return false
     end
-    #catch illegal pair
-    if(lastchar == '(' && i == ')')
-      return false
-    end
-    lastchar=i
   end
   #catch unbalanced structure
   if(counter!= 0)

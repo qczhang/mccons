@@ -18,7 +18,6 @@ function test_testDotBracket()
   #unit test
   @test RNA_2D.testDotBracket("((((.)))") == false #missing brackets on the right
   @test RNA_2D.testDotBracket("(((.))))") == false #missing brackets on the left
-  @test RNA_2D.testDotBracket("(((())))") == false #adjacent ()
 end
 
 
